@@ -168,9 +168,9 @@ async function loadPredictions(){
 }
 
 function editQuestion(questionId){
-  // ไปหน้า dashboard.html หรือทำ modal ให้แก้ไขคำถามได้
-  window.location.href = `dashboard.html?editQuestion=${questionId}`;
+  window.location.href = `prediction2.html?questionId=${questionId}`;
 }
+
 
 function viewPrediction(questionId){
   window.location.href = `prediction2.html?questionId=${questionId}`;
