@@ -22,7 +22,7 @@
 <body>
   <div class="container">
     <header>
-      <img src="assets/images/wednesdaylogo.png" alt="Horowednesday Logo">
+      <img src="https://raw.githubusercontent.com/username/repo/main/assets/images/wednesdaylogo.png" alt="Horowednesday Logo">
       <h1>แจ้งชำระเงิน</h1>
     </header>
 
@@ -96,7 +96,7 @@
       }
     }
 
-    // แสดงยอดรวมจาก query string
+    // ดึงยอดรวมจาก query string
     function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(param);
@@ -131,7 +131,6 @@
         return;
       }
 
-      // เพิ่ม collection payments
       db.collection('users').doc(currentUser.uid).collection('payments').add({
         payerName,
         bankName,
