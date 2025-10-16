@@ -146,8 +146,9 @@ async function loadPredictions(){
         // ถ้ามีคำทำนาย → ไปหน้า prediction2.html
         actionHTML = `<button class="green" onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button>`;
       } else {
-        // ถ้ายังไม่มี → แก้ไข / เพิ่มคำถาม
-        actionHTML = `<button class="green" onclick="editQuestion('${doc.id}')">แก้ไข / เพิ่มคำถาม</button>`;
+        // ถ้ายังไม่มี → แก้ไขคำถาม
+        let actionHTML = `<button class="green" onclick="editQuestion('${doc.id}')">แก้ไขคำถาม</button>`;
+
       }
 
       const tr = document.createElement('tr');
