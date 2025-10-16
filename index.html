@@ -4,10 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Horowednesday - แม่หมอเวนส์เดย์</title>
-  <!-- Google Font น่ารัก -->
   <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* Reset */
     * { margin:0; padding:0; box-sizing:border-box; font-family: 'Comfortaa', cursive; }
 
     body {
@@ -70,29 +68,16 @@
       transform: scale(1.05);
     }
 
-    p {
+    p { margin-top:10px; font-size:0.9rem; color:#555; }
+    p a { color:#7e5de8; text-decoration:none; font-weight:bold; }
+
+    .message {
       margin-top:10px;
       font-size:0.9rem;
-      color:#555;
-    }
-
-    p a {
-      color:#7e5de8;
-      text-decoration:none;
-      font-weight:bold;
-    }
-
-    div#login-message, div#register-message {
-      margin-top:10px;
-      font-size:0.9rem;
-      color:red;
       min-height:18px;
     }
-
-    h2 {
-      color:#5d4fa2;
-      margin-bottom:15px;
-    }
+    .error { color:red; }
+    .success { color:green; }
   </style>
 </head>
 <body>
@@ -107,9 +92,9 @@
       <h2>เข้าสู่ระบบ</h2>
       <input type="text" id="login-username" placeholder="Account LINE">
       <input type="password" id="login-password" placeholder="รหัสผ่าน">
-      <button onclick="loginUser()">Login</button>
+      <button onclick="loginUser()">เข้าสู่ระบบ</button>
       <p>ยังไม่มีบัญชี? <a href="#" onclick="showRegister()">สมัครสมาชิก</a></p>
-      <div id="login-message"></div>
+      <div id="login-message" class="message error"></div>
     </div>
 
     <!-- Register Form -->
@@ -127,9 +112,9 @@
       <input type="text" id="reg-job" placeholder="อาชีพ">
       <input type="text" id="reg-username" placeholder="Account LINE (ใช้ login)">
       <input type="password" id="reg-password" placeholder="รหัสผ่าน">
-      <button onclick="registerUser()">Register</button>
+      <button onclick="registerUser()">สมัครสมาชิก</button>
       <p>มีบัญชีแล้ว? <a href="#" onclick="showLogin()">เข้าสู่ระบบ</a></p>
-      <div id="register-message"></div>
+      <div id="register-message" class="message error"></div>
     </div>
   </div>
 
@@ -139,7 +124,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // Firebase config
+    // ✅ ตั้งค่า Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
       authDomain: "horowednesday.firebaseapp.com",
@@ -158,54 +143,80 @@
       document.getElementById('login-section').style.display = 'none';
       document.getElementById('register-section').style.display = 'block';
     }
+
     function showLogin() {
       document.getElementById('register-section').style.display = 'none';
       document.getElementById('login-section').style.display = 'block';
     }
 
+    // ✅ สมัครสมาชิก
     function registerUser() {
-  const name = document.getElementById('reg-name').value;
-  const birthday = document.getElementById('reg-birthday').value;
-  const gender = document.getElementById('reg-gender').value;
-  const relationship = document.getElementById('reg-relationship').value;
-  const job = document.getElementById('reg-job').value;
-  const username = document.getElementById('reg-username').value.trim();
-  const password = document.getElementById('reg-password').value;
+      const name = document.getElementById('reg-name').value;
+      const birthday = document.getElementById('reg-birthday').value;
+      const gender = document.getElementById('reg-gender').value;
+      const relationship = document.getElementById('reg-relationship').value;
+      const job = document.getElementById('reg-job').value;
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
 
-  if (!username || !password) {
-    document.getElementById('register-message').innerText = "กรุณากรอก Account LINE และรหัสผ่าน";
-    return;
-  }
+      if (!username || !password) {
+        document.getElementById('register-message').innerText = "กรุณากรอก Account LINE และรหัสผ่าน";
+        return;
+      }
 
-  // ใช้อีเมลเทียมสำหรับ Firebase Auth
-  const email = username + "@horowednesday.com";
+      const email = username + "@horowednesday.com";
 
-  auth.createUserWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-      const user = userCredential.user;
-      // สร้างข้อมูลผู้ใช้ใน Firestore
-      db.collection('users').doc(user.uid).set({
-        name,
-        birthday,
-        gender,
-        relationship,
-        job,
-        username,
-        status: 'active'
-      })
-      .then(() => {
-        // สมัครสำเร็จ → login อัตโนมัติแล้วไป prediction.html
-        auth.signInWithEmailAndPassword(email, password)
-          .then(() => {
-            window.location.href = "prediction.html";
+      auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          return db.collection('users').doc(user.uid).set({
+            name, birthday, gender, relationship, job, username, status: 'active'
           });
-      });
-    })
-    .catch((error) => {
-      document.getElementById('register-message').innerText = error.message;
-    });
-}
+        })
+        .then(() => {
+          document.getElementById('register-message').innerText = "สมัครสมาชิกสำเร็จ! กำลังเข้าสู่ระบบ...";
+          const email = document.getElementById('reg-username').value.trim() + "@horowednesday.com";
+          const password = document.getElementById('reg-password').value;
+          return auth.signInWithEmailAndPassword(email, password);
+        })
+        .then(() => {
+          window.location.href = "prediction.html";
+        })
+        .catch((error) => {
+          document.getElementById('register-message').innerText = error.message;
+        });
+    }
 
+    // ✅ เข้าสู่ระบบ
+    function loginUser() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!username || !password) {
+        document.getElementById('login-message').innerText = "กรุณากรอก Account LINE และรหัสผ่าน";
+        return;
+      }
+
+      const email = username + "@horowednesday.com";
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          document.getElementById('login-message').innerText = "เข้าสู่ระบบสำเร็จ! กำลังไปหน้า prediction...";
+          setTimeout(() => {
+            window.location.href = "prediction.html";
+          }, 1000);
+        })
+        .catch((error) => {
+          document.getElementById('login-message').innerText = "เข้าสู่ระบบไม่สำเร็จ: " + error.message;
+        });
+    }
+
+    // ✅ ถ้า login อยู่แล้ว ให้เด้งไป prediction.html ทันที
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        window.location.href = "prediction.html";
+      }
+    });
   </script>
 </body>
 </html>
