@@ -6,65 +6,71 @@
 <title>Admin Dashboard - Horowednesday</title>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
-body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff);padding:20px;min-height:100vh;}
-h1{color:#5d4fa2;margin-bottom:20px;}
-.container{background:#fff;border-radius:15px;padding:20px;max-width:1200px;margin:auto;box-shadow:0 10px 20px rgba(0,0,0,0.1);}
-table{width:100%;border-collapse:collapse;}
-th,td{border:1px solid #ccc;padding:8px;text-align:center;}
-th{background:#9d8de3;color:#fff;}
-button{padding:6px 12px;border:none;border-radius:8px;background:#7ec4ff;color:#fff;cursor:pointer;transition:0.3s;}
-button:hover{opacity:0.9;}
-input,select{padding:6px 8px;margin:5px;}
+  body{font-family:'Comfortaa',cursive; background:linear-gradient(135deg,#b4e0ff,#d7c9ff); padding:20px; min-height:100vh;}
+  .container{background:#fff; border-radius:15px; padding:20px; max-width:1000px; margin:auto; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+  table{width:100%; border-collapse:collapse;}
+  th,td{border:1px solid #ccc; padding:8px; text-align:center;}
+  th{background:#9d8de3; color:#fff;}
+  button{padding:6px 12px; border:none; border-radius:8px; background:#7ec4ff; color:#fff; cursor:pointer; transition:0.3s;}
+  button:hover{opacity:0.9;}
+  input,select{padding:6px 8px; margin:5px;}
+  #logoutBtn{float:right; margin-bottom:10px; background:#ff7e7e;}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Admin Dashboard</h1>
-<div style="margin-bottom:15px;">
-  <input type="text" id="search-username" placeholder="ค้นหา username">
-  <select id="filter-status">
-    <option value="">ทั้งหมด</option>
-    <option value="รอคำทำนาย">รอคำทำนาย</option>
-    <option value="ทำนายเสร็จแล้ว">ทำนายเสร็จแล้ว</option>
-  </select>
-  <button onclick="loadUsers()">ค้นหา/กรอง</button>
-</div>
-<table>
-  <thead>
-    <tr>
-      <th>ลำดับ</th>
-      <th>Username</th>
-      <th>สถานะการทำนาย</th>
-      <th>วันที่ชำระเงิน</th>
-      <th>แก้ไขข้อมูล/ทำนาย</th>
-    </tr>
-  </thead>
-  <tbody id="user-list"></tbody>
-</table>
+  <button id="logoutBtn" onclick="logoutAdmin()">Logout</button>
+  <h1>Admin Dashboard</h1>
+
+  <div style="margin-bottom:15px;">
+    <input type="text" id="search-username" placeholder="ค้นหา username">
+    <select id="filter-status">
+      <option value="">ทั้งหมด</option>
+      <option value="รอคำทำนาย">รอคำทำนาย</option>
+      <option value="ทำนายเสร็จแล้ว">ทำนายเสร็จแล้ว</option>
+    </select>
+    <button onclick="loadUsers()">ค้นหา/กรอง</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ลำดับ</th>
+        <th>Username</th>
+        <th>สถานะการทำนาย</th>
+        <th>วันที่ชำระเงิน</th>
+        <th>แก้ไขข้อมูล/ทำนาย</th>
+      </tr>
+    </thead>
+    <tbody id="user-list">
+      <!-- ข้อมูลลูกค้า -->
+    </tbody>
+  </table>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <script>
+// ตรวจสอบ admin
+if(localStorage.getItem("isAdmin") !== "true") {
+  alert("กรุณาเข้าสู่ระบบก่อน");
+  window.location.href = "admin-login.html";
+}
+
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
   authDomain: "horowednesday.firebaseapp.com",
   projectId: "horowednesday",
   storageBucket: "horowednesday.appspot.com",
   messagingSenderId: "604956033127",
-  appId: "1:604956033127:web:fec565a41020ccf28814c2"
+  appId: "1:604956033127:web:fec565a41020ccf28814c2",
+  measurementId: "G-B38JLFJPVS"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ตรวจสอบ admin login
-if(sessionStorage.getItem("adminLoggedIn") !== "true"){
-  alert("กรุณาเข้าสู่ระบบก่อน");
-  window.location.href="admin-login.html";
-}
-
-// โหลดข้อมูลลูกค้า
 async function loadUsers(){
   const tbody = document.getElementById("user-list");
   tbody.innerHTML = "";
@@ -72,7 +78,7 @@ async function loadUsers(){
   const filterStatus = document.getElementById("filter-status").value;
 
   const usersSnap = await db.collection("users").get();
-  let idx=1;
+  let idx = 1;
 
   for(const userDoc of usersSnap.docs){
     const userData = userDoc.data();
@@ -80,7 +86,6 @@ async function loadUsers(){
 
     if(searchUsername && !userData.username.toLowerCase().includes(searchUsername)) continue;
 
-    // ดึงคำถาม
     const questionsSnap = await db.collection("users").doc(uid).collection("questions").get();
     let status = "รอคำทำนาย";
     if(!questionsSnap.empty){
@@ -90,7 +95,6 @@ async function loadUsers(){
 
     if(filterStatus && status!==filterStatus) continue;
 
-    // ดึงวันที่ชำระเงินล่าสุด
     let lastDate = "-";
     const paymentsSnap = await db.collection("users").doc(uid).collection("payments").orderBy("datetime","asc").get();
     if(!paymentsSnap.empty){
@@ -111,10 +115,15 @@ async function loadUsers(){
 }
 
 function goToInfo(userId){
-  window.location.href=`admin-dashboard_info.html?userId=${userId}`;
+  window.location.href = `admin-dashboard_info.html?userId=${userId}`;
 }
 
-// โหลดตอนเริ่ม
+function logoutAdmin(){
+  localStorage.removeItem("isAdmin");
+  window.location.href = "admin-login.html";
+}
+
+// โหลดข้อมูลตอนเริ่ม
 loadUsers();
 </script>
 </body>
