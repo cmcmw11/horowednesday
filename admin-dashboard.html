@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Horowednesday</title>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
+    body{
+      background:linear-gradient(135deg,#c3bef0,#b4e0ff);
+      min-height:100vh;padding:20px;
+    }
+    header{
+      display:flex;justify-content:space-between;align-items:center;
+      background:#fff;border-radius:20px;padding:15px 25px;margin-bottom:20px;
+      box-shadow:0 5px 15px rgba(0,0,0,0.1);
+    }
+    header h1{color:#5d4fa2;font-size:1.3rem;}
+    button{
+      background:linear-gradient(135deg,#9d8de3,#7ec4ff);
+      border:none;padding:10px 20px;border-radius:12px;color:#fff;
+      cursor:pointer;font-size:0.95rem;transition:0.3s;
+    }
+    button:hover{transform:scale(1.05);}
+    .card{
+      background:#fff;border-radius:20px;padding:20px;margin-bottom:15px;
+      box-shadow:0 5px 15px rgba(0,0,0,0.1);
+    }
+    .user-info p{margin:3px 0;}
+    textarea{
+      width:100%;border:1px solid #ccc;border-radius:10px;padding:8px;margin:8px 0;
+      resize:vertical;font-size:0.9rem;
+    }
+    .status-pending{color:#e67e22;}
+    .status-done{color:#27ae60;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌙 แม่หมอเวนส์เดย์ - Admin Dashboard</h1>
+    <button onclick="logoutAdmin()">ออกจากระบบ</button>
+  </header>
+
+  <main id="content"></main>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+      authDomain: "horowednesday.firebaseapp.com",
+      projectId: "horowednesday",
+      storageBucket: "horowednesday.firebasestorage.app",
+      messagingSenderId: "604956033127",
+      appId: "1:604956033127:web:fec565a41020ccf28814c2",
+      measurementId: "G-B38JLFJPVS"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db=firebase.firestore();
+
+    // ตรวจสิทธิ์ admin
+    if(localStorage.getItem("isAdmin")!=="true"){
+      alert("โปรดเข้าสู่ระบบก่อน");
+      window.location.href="admin-login.html";
+    }
+
+    const content=document.getElementById('content');
+
+    async function loadPayments(){
+      content.innerHTML="<p>⏳ กำลังโหลดข้อมูล...</p>";
+      const usersSnap=await db.collection('users').get();
+      let allPayments=[];
+      for(const userDoc of usersSnap.docs){
+        const uid=userDoc.id;
+        const payments=await db.collection('users').doc(uid).collection('payments').get();
+        payments.forEach(p=>{
+          allPayments.push({uid,...p.data(),paymentId:p.id});
+        });
+      }
+
+      // เรียงตาม datetime
+      allPayments.sort((a,b)=>new Date(a.datetime)-new Date(b.datetime));
+
+      content.innerHTML="";
+      allPayments.forEach(p=>{
+        const div=document.createElement('div');
+        div.className="card";
+        div.innerHTML=`
+          <h3>👤 ${p.payerName} (${p.bankName})</h3>
+          <p>ยอดชำระ: ${p.amount} บาท</p>
+          <p>วันที่/เวลา: ${p.datetime}</p>
+          <p>สถานะ: <span class="${p.status==='done'?'status-done':'status-pending'}">${p.status==='done'?'ทำนายเสร็จแล้ว':'รอทำนาย'}</span></p>
+          <button onclick="viewUser('${p.uid}','${p.paymentId}')">ดูรายละเอียด</button>
+        `;
+        content.appendChild(div);
+      });
+    }
+
+    async function viewUser(uid,paymentId){
+      const userDoc=await db.collection('users').doc(uid).get();
+      const userData=userDoc.data();
+      const questionsSnap=await db.collection('users').doc(uid).collection('questions').get();
+      let html=`<div class='card'><h2>ข้อมูลผู้ใช้</h2>
+      <div class='user-info'>
+        <p>ชื่อ: ${userData.name}</p>
+        <p>วันเกิด: ${userData.birthday}</p>
+        <p>เพศ: ${userData.gender}</p>
+        <p>อาชีพ: ${userData.job}</p>
+        <p>สถานะความสัมพันธ์: ${userData.relationship}</p>
+      </div><hr><h2>คำถาม</h2>`;
+
+      questionsSnap.forEach(q=>{
+        const data=q.data();
+        html+=`
+          <div style="margin-bottom:15px;">
+            <p><b>คำถาม:</b> ${data.question}</p>
+            <p><b>ไพ่:</b> ${data.cards.join(', ')}</p>
+            <textarea id="pred-${q.id}" placeholder="พิมพ์คำทำนาย...">${data.prediction||''}</textarea>
+            <button onclick="savePrediction('${uid}','${q.id}')">ส่งคำทำนาย</button>
+          </div>`;
+      });
+
+      html+=`</div><button style="margin-top:10px;" onclick="loadPayments()">⬅️ กลับหน้าหลัก</button>`;
+      content.innerHTML=html;
+    }
+
+    async function savePrediction(uid,qid){
+      const text=document.getElementById(`pred-${qid}`).value.trim();
+      if(!text){alert("กรุณากรอกคำทำนาย");return;}
+      await db.collection('users').doc(uid).collection('questions').doc(qid).update({
+        prediction:text,
+        status:'done'
+      });
+      alert("บันทึกคำทำนายเรียบร้อย!");
+      loadPayments();
+    }
+
+    function logoutAdmin(){
+      localStorage.removeItem("isAdmin");
+      window.location.href="admin-login.html";
+    }
+
+    loadPayments();
+  </script>
+</body>
+</html>
