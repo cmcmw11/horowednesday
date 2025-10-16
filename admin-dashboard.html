@@ -6,22 +6,21 @@
 <title>Admin Dashboard - Horowednesday</title>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa',cursive;}
-body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff); padding:20px; min-height:100vh;}
-h1{color:#5d4fa2; margin-bottom:20px;}
-.container{background:#fff; border-radius:15px; padding:20px; max-width:1000px; margin:auto; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
-table{width:100%; border-collapse:collapse;}
-th,td{border:1px solid #ccc; padding:8px; text-align:center;}
-th{background:#9d8de3; color:#fff;}
-button{padding:6px 12px; border:none; border-radius:8px; background:#7ec4ff; color:#fff; cursor:pointer; transition:0.3s;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
+body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff);padding:20px;min-height:100vh;}
+h1{color:#5d4fa2;margin-bottom:20px;}
+.container{background:#fff;border-radius:15px;padding:20px;max-width:1200px;margin:auto;box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+table{width:100%;border-collapse:collapse;}
+th,td{border:1px solid #ccc;padding:8px;text-align:center;}
+th{background:#9d8de3;color:#fff;}
+button{padding:6px 12px;border:none;border-radius:8px;background:#7ec4ff;color:#fff;cursor:pointer;transition:0.3s;}
 button:hover{opacity:0.9;}
-input,select{padding:6px 8px; margin:5px;}
+input,select{padding:6px 8px;margin:5px;}
 </style>
 </head>
 <body>
 <div class="container">
 <h1>Admin Dashboard</h1>
-
 <div style="margin-bottom:15px;">
   <input type="text" id="search-username" placeholder="ค้นหา username">
   <select id="filter-status">
@@ -31,7 +30,6 @@ input,select{padding:6px 8px; margin:5px;}
   </select>
   <button onclick="loadUsers()">ค้นหา/กรอง</button>
 </div>
-
 <table>
   <thead>
     <tr>
@@ -42,28 +40,29 @@ input,select{padding:6px 8px; margin:5px;}
       <th>แก้ไขข้อมูล/ทำนาย</th>
     </tr>
   </thead>
-  <tbody id="user-list">
-    <!-- ข้อมูลลูกค้า -->
-  </tbody>
+  <tbody id="user-list"></tbody>
 </table>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <script>
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
   authDomain: "horowednesday.firebaseapp.com",
   projectId: "horowednesday",
   storageBucket: "horowednesday.appspot.com",
   messagingSenderId: "604956033127",
-  appId: "1:604956033127:web:fec565a41020ccf28814c2",
-  measurementId: "G-B38JLFJPVS"
+  appId: "1:604956033127:web:fec565a41020ccf28814c2"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
+// ตรวจสอบ admin login
+if(sessionStorage.getItem("adminLoggedIn") !== "true"){
+  alert("กรุณาเข้าสู่ระบบก่อน");
+  window.location.href="admin-login.html";
+}
 
 // โหลดข้อมูลลูกค้า
 async function loadUsers(){
@@ -73,16 +72,15 @@ async function loadUsers(){
   const filterStatus = document.getElementById("filter-status").value;
 
   const usersSnap = await db.collection("users").get();
-  let idx = 1;
+  let idx=1;
 
   for(const userDoc of usersSnap.docs){
     const userData = userDoc.data();
     const uid = userDoc.id;
 
-    // กรอง username
     if(searchUsername && !userData.username.toLowerCase().includes(searchUsername)) continue;
 
-    // ดึงคำถามเพื่อเช็คสถานะ
+    // ดึงคำถาม
     const questionsSnap = await db.collection("users").doc(uid).collection("questions").get();
     let status = "รอคำทำนาย";
     if(!questionsSnap.empty){
@@ -90,7 +88,6 @@ async function loadUsers(){
       status = allAnswered ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
     }
 
-    // กรองสถานะ
     if(filterStatus && status!==filterStatus) continue;
 
     // ดึงวันที่ชำระเงินล่าสุด
@@ -113,9 +110,8 @@ async function loadUsers(){
   }
 }
 
-// ไปหน้า admin-dashboard_info.html พร้อม userId
 function goToInfo(userId){
-  window.location.href = `admin-dashboard_info.html?userId=${userId}`;
+  window.location.href=`admin-dashboard_info.html?userId=${userId}`;
 }
 
 // โหลดตอนเริ่ม
