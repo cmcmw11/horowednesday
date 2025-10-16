@@ -6,18 +6,19 @@
 <title>Admin Dashboard - Horowednesday</title>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  * {margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa', cursive;}
-  body {background: linear-gradient(135deg,#b4e0ff,#d7c9ff); min-height:100vh; padding:20px;}
-  h1 {color:#5d4fa2; margin-bottom:20px;}
-  .logout {float:right; background:#f58a8a; color:#fff; padding:8px 15px; border:none; border-radius:10px; cursor:pointer;}
-  table {width:100%; border-collapse: collapse; margin-top:20px;}
-  th, td {padding:10px; border:1px solid #ccc; text-align:center;}
-  th {background:#9d8de3; color:#fff;}
-  button.view {background:#7ec4ff; color:#fff; border:none; padding:5px 10px; border-radius:8px; cursor:pointer;}
-  button.view.disabled {background:#ccc; cursor:not-allowed;}
-  .question-box {margin:10px 0; padding:10px; border:1px solid #ccc; border-radius:10px; background:#fff;}
-  .question-box input {width:100%; padding:8px; margin-top:5px; border-radius:8px; border:1px solid #ccc;}
-  .question-box button {margin-top:5px; background:#7ec4ff; color:#fff; border:none; padding:8px 10px; border-radius:8px; cursor:pointer;}
+*{margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa',cursive;}
+body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff); min-height:100vh; padding:20px;}
+h1{color:#5d4fa2; margin-bottom:10px;}
+.logout{float:right; background:#f58a8a; color:#fff; padding:8px 15px; border:none; border-radius:10px; cursor:pointer;}
+.filter-section{margin:15px 0; display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+input, select, button{padding:8px 10px; border-radius:8px; border:1px solid #ccc; font-size:1rem;}
+button{cursor:pointer; background:#7ec4ff; color:#fff; border:none; transition:0.3s;}
+button:hover{opacity:0.9;}
+table{width:100%; border-collapse:collapse; margin-top:10px;}
+th,td{border:1px solid #ccc; padding:8px; text-align:center;}
+th{background:#9d8de3; color:#fff;}
+button.view{background:#7ec4ff; color:#fff; border:none; padding:5px 10px; border-radius:8px; cursor:pointer;}
+button.view.disabled{background:#ccc; cursor:not-allowed;}
 </style>
 </head>
 <body>
@@ -25,20 +26,31 @@
 <h1>Admin Dashboard</h1>
 <button class="logout" onclick="adminLogout()">Logout</button>
 
-<h2>คิวลูกค้า</h2>
+<div class="filter-section">
+  <input type="text" id="searchName" placeholder="ค้นหาชื่อลูกค้า" oninput="loadCustomers()">
+  <select id="statusFilter" onchange="loadCustomers()">
+    <option value="all">ทั้งหมด</option>
+    <option value="pending">รอคำทำนาย</option>
+    <option value="completed">ทำนายแล้ว</option>
+  </select>
+  <select id="sortOrder" onchange="loadCustomers()">
+    <option value="asc">เรียงวันที่: เก่า → ใหม่</option>
+    <option value="desc">เรียงวันที่: ใหม่ → เก่า</option>
+  </select>
+</div>
+
 <table id="customer-table">
   <thead>
     <tr>
-      <th>ลำดับ</th>
+      <th>#</th>
       <th>Username</th>
-      <th>สถานะ</th>
-      <th>ดูคำทำนาย</th>
+      <th>วันที่ชำระ</th>
+      <th>สถานะการทำนาย</th>
+      <th>แก้ไข/เพิ่มคำทำนาย</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
-
-<div id="details"></div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -57,11 +69,13 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// เช็ก admin login
+// ตรวจ admin login
 document.addEventListener("DOMContentLoaded", function(){
-  if(localStorage.getItem("adminLoggedIn") !== "true"){
+  if(localStorage.getItem("adminLoggedIn")!=="true"){
     alert("กรุณาเข้าสู่ระบบก่อน");
     window.location.href="admin-login.html";
+  }else{
+    loadCustomers();
   }
 });
 
@@ -73,38 +87,50 @@ function adminLogout(){
 
 // โหลดคิวลูกค้า
 async function loadCustomers(){
-  const tableBody = document.querySelector("#customer-table tbody");
-  tableBody.innerHTML = '';
+  const tbody = document.querySelector("#customer-table tbody");
+  tbody.innerHTML = '';
 
-  const usersSnapshot = await db.collection("users").get();
+  const search = document.getElementById("searchName").value.toLowerCase();
+  const statusFilter = document.getElementById("statusFilter").value;
+  const sortOrder = document.getElementById("sortOrder").value;
+
+  const usersSnap = await db.collection("users").get();
   let customers = [];
 
-  for(const doc of usersSnapshot.docs){
+  for(const doc of usersSnap.docs){
     const userId = doc.id;
     const userData = doc.data();
+    const username = userData.username || "(ไม่ระบุ)";
+
+    if(search && !username.toLowerCase().includes(search)) continue;
 
     // ดึง payment ล่าสุด
     const paymentsSnap = await db.collection("users").doc(userId).collection("payments")
       .orderBy("datetime","asc").get();
-
-    let status = "รอชำระเงิน";
+    let lastPayment = null;
     if(!paymentsSnap.empty){
-      const lastPay = paymentsSnap.docs[paymentsSnap.docs.length-1].data();
-      status = (lastPay.status === "paid") ? "รอทำนาย" : "รอชำระเงิน";
+      lastPayment = paymentsSnap.docs[paymentsSnap.docs.length-1].data();
     }
 
-    // ตรวจว่าทำนายเสร็จหรือยัง
+    let status = "รอคำทำนาย";
+    let payDate = lastPayment ? lastPayment.datetime : "-";
+
+    // ตรวจคำถาม
     const questionsSnap = await db.collection("users").doc(userId).collection("questions").get();
     const allAnswered = !questionsSnap.empty && questionsSnap.docs.every(q => q.data().status === "ทำนายเสร็จแล้ว");
-    if(allAnswered) status = "ทำนายเสร็จแล้ว";
+    if(allAnswered) status = "ทำนายแล้ว";
 
-    customers.push({userId, username:userData.username, status});
+    // filter
+    if(statusFilter === "pending" && status === "ทำนายแล้ว") continue;
+    if(statusFilter === "completed" && status !== "ทำนายแล้ว") continue;
+
+    customers.push({userId, username, payDate, status});
   }
 
-  // เรียงตามสถานะ: รอทำนายก่อน
+  // sort
   customers.sort((a,b)=>{
-    const order = {"รอทำนาย":1,"รอชำระเงิน":2,"ทำนายเสร็จแล้ว":3};
-    return order[a.status]-order[b.status];
+    if(sortOrder==="asc") return (a.payDate||"") > (b.payDate||"") ? 1:-1;
+    else return (a.payDate||"") < (b.payDate||"") ? 1:-1;
   });
 
   customers.forEach((c,i)=>{
@@ -112,65 +138,22 @@ async function loadCustomers(){
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${c.username}</td>
+      <td>${c.payDate}</td>
       <td>${c.status}</td>
-      <td><button class="view ${c.status!=="ทำนายเสร็จแล้ว"?"disabled":""}" onclick="viewCustomer('${c.userId}')">ดูคำทำนาย</button></td>
+      <td>
+        <button class="view ${c.status!=="ทำนายแล้ว"?"":"disabled"}" 
+          onclick="editCustomer('${c.userId}')">แก้ไข/เพิ่มคำทำนาย</button>
+      </td>
     `;
-    tableBody.appendChild(tr);
+    tbody.appendChild(tr);
   });
 }
 
-// แสดงข้อมูลลูกค้า + คำถาม
-async function viewCustomer(userId){
-  const details = document.getElementById("details");
-  details.innerHTML = '<h3>ข้อมูลลูกค้า</h3>';
-
-  const userDoc = await db.collection("users").doc(userId).get();
-  const userData = userDoc.data();
-
-  details.innerHTML += `
-    <p>ชื่อ: ${userData.name}</p>
-    <p>วันเกิด: ${userData.birthday}</p>
-    <p>เพศ: ${userData.gender}</p>
-    <p>สถานะความสัมพันธ์: ${userData.relationship}</p>
-    <p>อาชีพ: ${userData.job}</p>
-  `;
-
-  const qSnap = await db.collection("users").doc(userId).collection("questions").get();
-  if(qSnap.empty){
-    details.innerHTML += "<p>ยังไม่มีคำถาม</p>";
-    return;
-  }
-
-  for(const qDoc of qSnap.docs){
-    const q = qDoc.data();
-    const qId = qDoc.id;
-    details.innerHTML += `
-      <div class="question-box" id="q-${qId}">
-        <p><b>คำถาม:</b> ${q.question}</p>
-        <p><b>ไพ่:</b> ${q.cards.join(", ")}</p>
-        <p><b>คำทำนาย:</b></p>
-        <input type="text" id="answer-${qId}" value="${q.answer || ''}" placeholder="กรอกคำทำนาย">
-        <button onclick="submitAnswer('${userId}','${qId}')">ส่งคำทำนาย</button>
-      </div>
-    `;
-  }
+// ไปหน้า info
+function editCustomer(userId){
+  window.location.href = `admin-dashboard_info.html?userId=${userId}`;
 }
 
-// ส่งคำทำนาย
-function submitAnswer(userId,qId){
-  const answer = document.getElementById(`answer-${qId}`).value;
-  db.collection("users").doc(userId).collection("questions").doc(qId).update({
-    answer: answer,
-    status: "ทำนายเสร็จแล้ว"
-  }).then(()=>{
-    alert("ส่งคำทำนายเรียบร้อย!");
-    loadCustomers();
-    viewCustomer(userId);
-  });
-}
-
-// โหลดตอนเปิดหน้า
-loadCustomers();
 </script>
 </body>
 </html>
