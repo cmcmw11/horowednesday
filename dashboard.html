@@ -126,28 +126,52 @@
     }
 
     function renderQuestions(){
-      const list=document.getElementById('question-list');
-      list.innerHTML='';
-      questions.forEach((q,i)=>{
-        const div=document.createElement('div');
-        div.className='question-item';
-        div.innerHTML=`<h3>คำถาม ${i+1}</h3>
-        <p>${q.question}</p>
-        <p>ไพ่: ${q.cards.join(", ")}</p>`;
-        list.appendChild(div);
+  const list = document.getElementById('question-list');
+  list.innerHTML = '';
+
+  questions.forEach((q, i)=>{
+    const div = document.createElement('div');
+    div.className = 'question-item';
+    div.innerHTML = `
+      <h3>คำถาม ${i+1}</h3>
+      <p>${q.question}</p>
+      <p>ไพ่: ${q.cards.join(", ")}</p>
+    `;
+    list.appendChild(div);
+  });
+
+  // แสดงยอดรวมในหน้า dashboard
+  document.getElementById('total-amount').innerText = `ยอดรวม: ${questions.length*19} บาท`;
+}
+
+async function goToPayment(){
+  if(questions.length === 0){ 
+    alert("คุณยังไม่มีคำถาม"); 
+    return; 
+  }
+
+  const userRef = db.collection('users').doc(currentUser.uid).collection('questions');
+
+  try {
+    // เพิ่มคำถามทีละตัว
+    for(const q of questions){
+      await userRef.add({
+        ...q,
+        amount: 19,
+        status: 'pending',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
-      document.getElementById('total-amount').innerText=`ยอดรวม: ${questions.length*19} บาท`;
     }
 
-    function goToPayment(){
-      if(questions.length===0){ alert("คุณยังไม่มีคำถาม"); return; }
-      // เก็บใน Firestore
-      const batch = db.collection('users').doc(currentUser.uid).collection('questions');
-      questions.forEach(q=>{
-        batch.add({...q, amount:19, status:'pending'});
-      });
-      window.location.href="payment.html";
-    }
+    // ส่งไป payment.html พร้อมยอดรวมเป็น query string
+    const total = questions.length * 19;
+    window.location.href = `payment.html?total=${total}`;
+
+  } catch(err){
+    alert("เกิดข้อผิดพลาด: " + err.message);
+  }
+}
+
   </script>
 </body>
 </html>
