@@ -1,104 +1,186 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Horowednesday Prediction</title>
-  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
-    body{background:linear-gradient(135deg,#c3bef0,#b4e0ff);padding:10px;}
-    .container{max-width:600px;margin:0 auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;}
-    header img{width:50px;height:50px;border-radius:50%;}
-    header h1{color:#5d4fa2;font-size:1.5rem;}
-    header button{padding:8px 12px;border:none;border-radius:10px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
-    header button:hover{transform:scale(1.05);}
-    .question-item{background:#f3f0ff;padding:10px;margin:10px 0;border-radius:12px;box-shadow:0 5px 10px rgba(0,0,0,0.05);}
-    .cards img{width:60px;height:90px;margin-right:5px;border-radius:6px;}
-    h2{color:#5d4fa2;margin:10px 0;}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horowednesday Prediction</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Baloo 2', cursive;}
+body{background:linear-gradient(135deg,#c3bef0,#b4e0ff);padding:10px;}
+.container{max-width:700px;margin:0 auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;}
+header img{width:50px;height:50px;border-radius:50%;}
+header h1{color:#5d4fa2;font-size:1.5rem;}
+header button{padding:8px 12px;border:none;border-radius:10px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
+header button:hover{transform:scale(1.05);}
+#add-btn{background:#7ec4ff;margin-left:10px;}
+.user-info{background:#f3f0ff;padding:10px;margin-bottom:15px;border-radius:12px;}
+.user-info p{margin:5px 0;color:#5d4fa2;font-weight:bold;}
+.user-info button{padding:5px 10px;border:none;border-radius:8px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
+.user-info button:hover{transform:scale(1.05);}
+table{width:100%;border-collapse:collapse;margin-top:15px;}
+th,td{border:1px solid #ccc;padding:8px;text-align:center;border-radius:8px;}
+th{background:#d7cfff;color:#5d4fa2;}
+td button{padding:5px 10px;border:none;border-radius:8px;color:#fff;cursor:pointer;transition:0.3s;}
+td button.green{background:#4caf50;}
+td button.gray{background:#aaa;cursor:not-allowed;}
+.cards img{width:50px;height:75px;margin-right:5px;border-radius:6px;}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;}
+.modal-content{background:#fff;padding:20px;border-radius:20px;max-width:400px;position:relative;}
+.modal-content h2{margin-bottom:10px;color:#5d4fa2;}
+.close-btn{position:absolute;top:10px;right:10px;cursor:pointer;font-size:1.2rem;}
+</style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <img src="https://raw.githubusercontent.com/username/repo/main/assets/images/wednesdaylogo.png" alt="Logo">
-      <h1>รายการทำนาย</h1>
-      <button onclick="logout()">Log out</button>
-    </header>
-
-    <div id="question-list">
-      <p>กำลังโหลดข้อมูล...</p>
-    </div>
+<div class="container">
+<header>
+  <img src="https://raw.githubusercontent.com/username/repo/main/assets/images/wednesdaylogo.png" alt="Logo">
+  <h1>รายการทำนาย</h1>
+  <div>
+    <button onclick="logout()">Log out</button>
+    <button id="add-btn" onclick="goDashboard()">เพิ่มรายการ</button>
   </div>
+</header>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<div class="user-info">
+  <p><strong>ชื่อ:</strong> <span id="user-name"></span></p>
+  <p><strong>วันเกิด:</strong> <span id="user-birth"></span></p>
+  <p><strong>เพศ:</strong> <span id="user-gender"></span></p>
+  <p><strong>อาชีพ:</strong> <span id="user-job"></span></p>
+  <p><strong>สถานะความสัมพันธ์:</strong> <span id="user-status"></span></p>
+  <button onclick="editUserInfo()">แก้ไขข้อมูล</button>
+</div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
-      authDomain: "horowednesday.firebaseapp.com",
-      projectId: "horowednesday",
-      storageBucket: "horowednesday.firebasestorage.app",
-      messagingSenderId: "604956033127",
-      appId: "1:604956033127:web:fec565a41020ccf28814c2",
-      measurementId: "G-B38JLFJPVS"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+<table>
+  <thead>
+    <tr>
+      <th>รายการ</th>
+      <th>วันที่</th>
+      <th>สถานะ</th>
+      <th>ดูคำทำนาย</th>
+    </tr>
+  </thead>
+  <tbody id="prediction-list">
+    <tr><td colspan="4">กำลังโหลดข้อมูล...</td></tr>
+  </tbody>
+</table>
+</div>
 
-    let currentUser;
+<!-- Modal แสดงคำทำนาย -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeModal()">&times;</span>
+    <h2>คำทำนาย</h2>
+    <p id="modal-text"></p>
+    <div class="cards" id="modal-cards"></div>
+  </div>
+</div>
 
-    auth.onAuthStateChanged(user=>{
-      if(user) {
-        currentUser = user;
-        loadQuestions();
-      } else {
-        window.location.href = "index.html";
-      }
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+  authDomain: "horowednesday.firebaseapp.com",
+  projectId: "horowednesday",
+  storageBucket: "horowednesday.firebasestorage.app",
+  messagingSenderId: "604956033127",
+  appId: "1:604956033127:web:fec565a41020ccf28814c2",
+  measurementId: "G-B38JLFJPVS"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser;
+
+auth.onAuthStateChanged(user=>{
+  if(user){
+    currentUser=user;
+    loadUserInfo();
+    loadPredictions();
+  } else {
+    window.location.href="index.html";
+  }
+});
+
+function logout(){ auth.signOut().then(()=>window.location.href="index.html"); }
+function goDashboard(){ window.location.href="dashboard.html"; }
+
+async function loadUserInfo(){
+  const doc = await db.collection('users').doc(currentUser.uid).get();
+  if(doc.exists){
+    const data = doc.data();
+    document.getElementById('user-name').innerText = data.name || '';
+    document.getElementById('user-birth').innerText = data.birth || '';
+    document.getElementById('user-gender').innerText = data.gender || '';
+    document.getElementById('user-job').innerText = data.job || '';
+    document.getElementById('user-status').innerText = data.relationship || '';
+  }
+}
+
+function editUserInfo(){
+  const newName = prompt("ชื่อ:", document.getElementById('user-name').innerText);
+  if(newName){
+    db.collection('users').doc(currentUser.uid).update({name:newName}).then(()=>loadUserInfo());
+  }
+}
+
+async function loadPredictions(){
+  const tbody = document.getElementById('prediction-list');
+  tbody.innerHTML='<tr><td colspan="4">กำลังโหลดข้อมูล...</td></tr>';
+
+  try {
+    const snapshot = await db.collection('users').doc(currentUser.uid)
+      .collection('questions').orderBy('timestamp','desc').get();
+
+    if(snapshot.empty){
+      tbody.innerHTML='<tr><td colspan="4">ยังไม่มีคำถาม</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML='';
+    let idx=1;
+    snapshot.forEach(doc=>{
+      const data = doc.data();
+      const date = data.timestamp?.toDate().toLocaleString() || '-';
+      const hasPrediction = data.prediction && data.prediction.trim() !== '';
+      const status = hasPrediction ? 'เสร็จแล้ว' : 'รอทำนาย';
+
+      const btnClass = hasPrediction ? 'green' : 'gray';
+      const btnDisabled = hasPrediction ? '' : 'disabled';
+      const btnHTML = `<button class="${btnClass}" ${btnDisabled} onclick="showPrediction('${encodeURIComponent(data.prediction||"")}','${encodeURIComponent(JSON.stringify(data.cards||[]))}')">ดูคำทำนาย</button>`;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML=`
+        <td>${idx}</td>
+        <td>${date}</td>
+        <td>${status}</td>
+        <td>${btnHTML}</td>
+      `;
+      tbody.appendChild(tr);
+      idx++;
     });
 
-    function logout(){
-      auth.signOut().then(()=>window.location.href="index.html");
-    }
+  } catch(err){
+    tbody.innerHTML=`<tr><td colspan="4">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+  }
+}
 
-    async function loadQuestions(){
-      const listDiv = document.getElementById('question-list');
-      listDiv.innerHTML = '<p>กำลังโหลดข้อมูล...</p>';
+function showPrediction(pred, cards){
+  document.getElementById('modal-text').innerText = decodeURIComponent(pred);
+  const cardArr = JSON.parse(decodeURIComponent(cards));
+  const cardsDiv = document.getElementById('modal-cards');
+  cardsDiv.innerHTML = cardArr.map(c=>`<img src="https://raw.githubusercontent.com/username/repo/main/assets/images/tarot/${c.replace(/ /g,'_')}.png" title="${c}">`).join('');
+  document.getElementById('modal').style.display='flex';
+}
 
-      try {
-        const snapshot = await db.collection('users').doc(currentUser.uid).collection('questions').orderBy('timestamp','desc').get();
-        if(snapshot.empty){
-          listDiv.innerHTML = '<p>ยังไม่มีคำถาม</p>';
-          return;
-        }
-
-        listDiv.innerHTML = '';
-        snapshot.forEach(doc=>{
-          const data = doc.data();
-          const div = document.createElement('div');
-          div.className = 'question-item';
-          div.innerHTML = `
-            <h2>คำถาม:</h2>
-            <p>${data.question}</p>
-            <h2>ไพ่:</h2>
-            <div class="cards">
-              ${data.cards.map(c=>`<img src="https://raw.githubusercontent.com/username/repo/main/assets/images/tarot/${c.replace(/ /g,'_')}.png" title="${c}">`).join('')}
-            </div>
-            <h2>สถานะการชำระเงิน:</h2>
-            <p>${data.status}</p>
-            <h2>คำทำนาย:</h2>
-            <p>${data.prediction || "รอคำทำนาย"}</p>
-          `;
-          listDiv.appendChild(div);
-        });
-      } catch(err){
-        listDiv.innerHTML = `<p>เกิดข้อผิดพลาด: ${err.message}</p>`;
-      }
-    }
-  </script>
+function closeModal(){
+  document.getElementById('modal').style.display='none';
+}
+</script>
 </body>
 </html>
