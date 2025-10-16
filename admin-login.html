@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - Horowednesday</title>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa', cursive;}
+    body {
+      background: linear-gradient(135deg,#c3bef0,#b4e0ff);
+      display:flex; justify-content:center; align-items:center;
+      min-height:100vh; padding:20px;
+    }
+    .container {
+      background:#fff; padding:30px; border-radius:20px;
+      box-shadow:0 10px 25px rgba(0,0,0,0.1);
+      max-width:350px; width:100%; text-align:center;
+    }
+    img {width:90px; height:90px; border-radius:50%; margin-bottom:10px;}
+    h1 {color:#5d4fa2; margin-bottom:20px;}
+    input {
+      width:100%; padding:12px; margin:10px 0; border-radius:10px;
+      border:1px solid #ccc; outline:none; font-size:1rem;
+    }
+    button {
+      width:100%; padding:12px; background:linear-gradient(135deg,#9d8de3,#7ec4ff);
+      border:none; border-radius:12px; color:#fff; font-size:1rem; cursor:pointer;
+      transition:0.3s;
+    }
+    button:hover {transform:scale(1.05);}
+    #msg {color:red; margin-top:10px; font-size:0.9rem;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="https://raw.githubusercontent.com/username/repo/main/wednesdaylogo.png" alt="logo">
+    <h1>Admin Login</h1>
+    <input type="text" id="admin-username" placeholder="Username">
+    <input type="password" id="admin-password" placeholder="Password">
+    <button onclick="loginAdmin()">เข้าสู่ระบบ</button>
+    <div id="msg"></div>
+  </div>
+
+  <script>
+    function loginAdmin(){
+      const user=document.getElementById('admin-username').value.trim();
+      const pass=document.getElementById('admin-password').value.trim();
+      if(user==="Wanida" && pass==="wanihoro11"){
+        localStorage.setItem("isAdmin","true");
+        window.location.href="admin-dashboard.html";
+      }else{
+        document.getElementById('msg').innerText="ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+      }
+    }
+  </script>
+</body>
+</html>
