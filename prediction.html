@@ -124,9 +124,22 @@ async function loadUserInfo(){
 
 function editUserInfo(){
   const newName = prompt("ชื่อ:", document.getElementById('user-name').innerText);
-  if(newName){
-    db.collection('users').doc(currentUser.uid).update({name:newName}).then(()=>loadUserInfo());
-  }
+  const newBirth = prompt("วันเกิด:", document.getElementById('user-birth').innerText);
+  const newGender = prompt("เพศ:", document.getElementById('user-gender').innerText);
+  const newJob = prompt("อาชีพ:", document.getElementById('user-job').innerText);
+  const newRelationship = prompt("สถานะความสัมพันธ์:", document.getElementById('user-status').innerText);
+
+  db.collection('users').doc(currentUser.uid).update({
+    name: newName,
+    birth: newBirth,
+    gender: newGender,
+    job: newJob,
+    relationship: newRelationship
+  }).then(()=>{
+    loadUserInfo();
+  }).catch(err=>{
+    alert("แก้ไขข้อมูลไม่สำเร็จ: " + err.message);
+  });
 }
 
 async function loadPredictions(){
