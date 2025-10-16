@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horowednesday - แม่หมอเวนส์เดย์</title>
+  <!-- Google Font น่ารัก -->
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Reset */
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Comfortaa', cursive; }
+
+    body {
+      background: linear-gradient(135deg, #c3bef0, #b4e0ff);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      padding:10px;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 20px;
+      padding: 30px 20px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      text-align:center;
+    }
+
+    header img {
+      width:100px;
+      height:100px;
+      border-radius:50%;
+      object-fit:cover;
+      margin-bottom:15px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      color: #5d4fa2;
+      margin-bottom:20px;
+    }
+
+    input, select {
+      width:100%;
+      padding:12px;
+      margin:8px 0;
+      border-radius:10px;
+      border:1px solid #ccc;
+      outline:none;
+      font-size:1rem;
+    }
+
+    button {
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border:none;
+      border-radius:12px;
+      background: linear-gradient(135deg, #9d8de3, #7ec4ff);
+      color:#fff;
+      font-size:1rem;
+      cursor:pointer;
+      transition:0.3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    p {
+      margin-top:10px;
+      font-size:0.9rem;
+      color:#555;
+    }
+
+    p a {
+      color:#7e5de8;
+      text-decoration:none;
+      font-weight:bold;
+    }
+
+    div#login-message, div#register-message {
+      margin-top:10px;
+      font-size:0.9rem;
+      color:red;
+      min-height:18px;
+    }
+
+    h2 {
+      color:#5d4fa2;
+      margin-bottom:15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="https://raw.githubusercontent.com/username/repo/main/assets/images/wednesdaylogo.png" alt="Horowednesday Logo">
+      <h1>Horowednesday</h1>
+    </header>
+
+    <!-- Login Form -->
+    <div id="login-section">
+      <h2>เข้าสู่ระบบ</h2>
+      <input type="text" id="login-username" placeholder="Account LINE">
+      <input type="password" id="login-password" placeholder="รหัสผ่าน">
+      <button onclick="loginUser()">Login</button>
+      <p>ยังไม่มีบัญชี? <a href="#" onclick="showRegister()">สมัครสมาชิก</a></p>
+      <div id="login-message"></div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="register-section" style="display:none;">
+      <h2>สมัครสมาชิก</h2>
+      <input type="text" id="reg-name" placeholder="ชื่อ">
+      <input type="date" id="reg-birthday" placeholder="วันเกิด">
+      <select id="reg-gender">
+        <option value="">เลือกเพศ</option>
+        <option value="ชาย">ชาย</option>
+        <option value="หญิง">หญิง</option>
+        <option value="อื่นๆ">อื่นๆ</option>
+      </select>
+      <input type="text" id="reg-relationship" placeholder="สถานะความสัมพันธ์">
+      <input type="text" id="reg-job" placeholder="อาชีพ">
+      <input type="text" id="reg-username" placeholder="Account LINE (ใช้ login)">
+      <input type="password" id="reg-password" placeholder="รหัสผ่าน">
+      <button onclick="registerUser()">Register</button>
+      <p>มีบัญชีแล้ว? <a href="#" onclick="showLogin()">เข้าสู่ระบบ</a></p>
+      <div id="register-message"></div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+      authDomain: "horowednesday.firebaseapp.com",
+      projectId: "horowednesday",
+      storageBucket: "horowednesday.firebasestorage.app",
+      messagingSenderId: "604956033127",
+      appId: "1:604956033127:web:fec565a41020ccf28814c2",
+      measurementId: "G-B38JLFJPVS"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    function showRegister() {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('register-section').style.display = 'block';
+    }
+    function showLogin() {
+      document.getElementById('register-section').style.display = 'none';
+      document.getElementById('login-section').style.display = 'block';
+    }
+
+    function registerUser() {
+      const name = document.getElementById('reg-name').value;
+      const birthday = document.getElementById('reg-birthday').value;
+      const gender = document.getElementById('reg-gender').value;
+      const relationship = document.getElementById('reg-relationship').value;
+      const job = document.getElementById('reg-job').value;
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
+
+      if (!username || !password) {
+        document.getElementById('register-message').innerText = "กรุณากรอก Account LINE และรหัสผ่าน";
+        return;
+      }
+
+      auth.createUserWithEmailAndPassword(username + "@horowednesday.com", password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          db.collection('users').doc(user.uid).set({
+            name, birthday, gender, relationship, job, username, status: 'active'
+          });
+          document.getElementById('register-message').innerText = "สมัครสมาชิกเรียบร้อย! กลับไป login ได้เลย";
+        })
+        .catch((error) => {
+          document.getElementById('register-message').innerText = error.message;
+        });
+    }
+
+    function loginUser() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      auth.signInWithEmailAndPassword(username + "@horowednesday.com", password)
+        .then((userCredential) => {
+          window.location.href = "dashboard.html";
+        })
+        .catch((error) => {
+          document.getElementById('login-message').innerText = error.message;
+        });
+    }
+  </script>
+</body>
+</html>
