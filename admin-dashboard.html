@@ -58,10 +58,12 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // เช็ก admin login
-if(localStorage.getItem("adminLoggedIn") !== "true") {
-  alert("กรุณาเข้าสู่ระบบก่อน");
-  window.location.href="admin-login.html";
-}
+document.addEventListener("DOMContentLoaded", function(){
+  if(localStorage.getItem("adminLoggedIn") !== "true"){
+    alert("กรุณาเข้าสู่ระบบก่อน");
+    window.location.href="admin-login.html";
+  }
+});
 
 // Logout
 function adminLogout(){
@@ -73,32 +75,38 @@ function adminLogout(){
 async function loadCustomers(){
   const tableBody = document.querySelector("#customer-table tbody");
   tableBody.innerHTML = '';
-  
+
   const usersSnapshot = await db.collection("users").get();
   let customers = [];
-  
+
   for(const doc of usersSnapshot.docs){
     const userId = doc.id;
     const userData = doc.data();
-    
+
     // ดึง payment ล่าสุด
     const paymentsSnap = await db.collection("users").doc(userId).collection("payments")
       .orderBy("datetime","asc").get();
-    
+
     let status = "รอชำระเงิน";
     if(!paymentsSnap.empty){
       const lastPay = paymentsSnap.docs[paymentsSnap.docs.length-1].data();
       status = (lastPay.status === "paid") ? "รอทำนาย" : "รอชำระเงิน";
     }
-    
+
+    // ตรวจว่าทำนายเสร็จหรือยัง
+    const questionsSnap = await db.collection("users").doc(userId).collection("questions").get();
+    const allAnswered = !questionsSnap.empty && questionsSnap.docs.every(q => q.data().status === "ทำนายเสร็จแล้ว");
+    if(allAnswered) status = "ทำนายเสร็จแล้ว";
+
     customers.push({userId, username:userData.username, status});
   }
-  
-  // เรียงตามเวลาชำระเงิน
+
+  // เรียงตามสถานะ: รอทำนายก่อน
   customers.sort((a,b)=>{
-    return a.status==="รอทำนาย" ? -1 : 1;
+    const order = {"รอทำนาย":1,"รอชำระเงิน":2,"ทำนายเสร็จแล้ว":3};
+    return order[a.status]-order[b.status];
   });
-  
+
   customers.forEach((c,i)=>{
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -111,13 +119,14 @@ async function loadCustomers(){
   });
 }
 
+// แสดงข้อมูลลูกค้า + คำถาม
 async function viewCustomer(userId){
   const details = document.getElementById("details");
   details.innerHTML = '<h3>ข้อมูลลูกค้า</h3>';
-  
+
   const userDoc = await db.collection("users").doc(userId).get();
   const userData = userDoc.data();
-  
+
   details.innerHTML += `
     <p>ชื่อ: ${userData.name}</p>
     <p>วันเกิด: ${userData.birthday}</p>
@@ -125,18 +134,16 @@ async function viewCustomer(userId){
     <p>สถานะความสัมพันธ์: ${userData.relationship}</p>
     <p>อาชีพ: ${userData.job}</p>
   `;
-  
-  // ดึงคำถาม
+
   const qSnap = await db.collection("users").doc(userId).collection("questions").get();
   if(qSnap.empty){
     details.innerHTML += "<p>ยังไม่มีคำถาม</p>";
     return;
   }
-  
+
   for(const qDoc of qSnap.docs){
     const q = qDoc.data();
     const qId = qDoc.id;
-    
     details.innerHTML += `
       <div class="question-box" id="q-${qId}">
         <p><b>คำถาม:</b> ${q.question}</p>
