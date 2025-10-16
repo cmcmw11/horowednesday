@@ -7,52 +7,47 @@
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa',cursive;}
-body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff); min-height:100vh; padding:20px;}
-h1{color:#5d4fa2; margin-bottom:10px;}
-.logout{float:right; background:#f58a8a; color:#fff; padding:8px 15px; border:none; border-radius:10px; cursor:pointer;}
-.filter-section{margin:15px 0; display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
-input, select, button{padding:8px 10px; border-radius:8px; border:1px solid #ccc; font-size:1rem;}
-button{cursor:pointer; background:#7ec4ff; color:#fff; border:none; transition:0.3s;}
-button:hover{opacity:0.9;}
-table{width:100%; border-collapse:collapse; margin-top:10px;}
+body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff); padding:20px; min-height:100vh;}
+h1{color:#5d4fa2; margin-bottom:20px;}
+.container{background:#fff; border-radius:15px; padding:20px; max-width:900px; margin:auto; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+table{width:100%; border-collapse:collapse;}
 th,td{border:1px solid #ccc; padding:8px; text-align:center;}
 th{background:#9d8de3; color:#fff;}
-button.view{background:#7ec4ff; color:#fff; border:none; padding:5px 10px; border-radius:8px; cursor:pointer;}
-button.view.disabled{background:#ccc; cursor:not-allowed;}
+button{padding:6px 12px; border:none; border-radius:8px; background:#7ec4ff; color:#fff; cursor:pointer; transition:0.3s;}
+button:hover{opacity:0.9;}
+select,input{padding:6px 8px; margin:5px;}
 </style>
 </head>
 <body>
-
+<div class="container">
 <h1>Admin Dashboard</h1>
-<button class="logout" onclick="adminLogout()">Logout</button>
 
-<div class="filter-section">
-  <input type="text" id="searchName" placeholder="ค้นหาชื่อลูกค้า" oninput="loadCustomers()">
-  <select id="statusFilter" onchange="loadCustomers()">
-    <option value="all">ทั้งหมด</option>
-    <option value="pending">รอคำทำนาย</option>
-    <option value="completed">ทำนายแล้ว</option>
+<div style="margin-bottom:15px;">
+  <input type="text" id="search-username" placeholder="ค้นหา username">
+  <select id="filter-status">
+    <option value="">ทั้งหมด</option>
+    <option value="รอคำทำนาย">รอคำทำนาย</option>
+    <option value="ทำนายเสร็จแล้ว">ทำนายเสร็จแล้ว</option>
   </select>
-  <select id="sortOrder" onchange="loadCustomers()">
-    <option value="asc">เรียงวันที่: เก่า → ใหม่</option>
-    <option value="desc">เรียงวันที่: ใหม่ → เก่า</option>
-  </select>
+  <button onclick="loadUsers()">ค้นหา/กรอง</button>
 </div>
 
-<table id="customer-table">
+<table>
   <thead>
     <tr>
-      <th>#</th>
+      <th>ลำดับ</th>
       <th>Username</th>
-      <th>วันที่ชำระ</th>
       <th>สถานะการทำนาย</th>
-      <th>แก้ไข/เพิ่มคำทำนาย</th>
+      <th>วันที่ชำระเงิน</th>
+      <th>จัดการ</th>
     </tr>
   </thead>
-  <tbody></tbody>
+  <tbody id="user-list">
+    <!-- ข้อมูลลูกค้าแสดงที่นี่ -->
+  </tbody>
 </table>
+</div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -69,91 +64,56 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ตรวจ admin login
-document.addEventListener("DOMContentLoaded", function(){
-  if(localStorage.getItem("adminLoggedIn")!=="true"){
-    alert("กรุณาเข้าสู่ระบบก่อน");
-    window.location.href="admin-login.html";
-  }else{
-    loadCustomers();
-  }
-});
+async function loadUsers(){
+  const tbody = document.getElementById("user-list");
+  tbody.innerHTML = "";
 
-// Logout
-function adminLogout(){
-  localStorage.removeItem("adminLoggedIn");
-  window.location.href="admin-login.html";
-}
-
-// โหลดคิวลูกค้า
-async function loadCustomers(){
-  const tbody = document.querySelector("#customer-table tbody");
-  tbody.innerHTML = '';
-
-  const search = document.getElementById("searchName").value.toLowerCase();
-  const statusFilter = document.getElementById("statusFilter").value;
-  const sortOrder = document.getElementById("sortOrder").value;
+  const searchUsername = document.getElementById("search-username").value.trim().toLowerCase();
+  const filterStatus = document.getElementById("filter-status").value;
 
   const usersSnap = await db.collection("users").get();
-  let customers = [];
+  let idx = 1;
 
-  for(const doc of usersSnap.docs){
-    const userId = doc.id;
-    const userData = doc.data();
-    const username = userData.username || "(ไม่ระบุ)";
+  for(const userDoc of usersSnap.docs){
+    const userData = userDoc.data();
+    const uid = userDoc.id;
 
-    if(search && !username.toLowerCase().includes(search)) continue;
-
-    // ดึง payment ล่าสุด
-    const paymentsSnap = await db.collection("users").doc(userId).collection("payments")
-      .orderBy("datetime","asc").get();
-    let lastPayment = null;
+    // ดึงข้อมูล payments ล่าสุดเพื่อดูสถานะการทำนาย
+    const paymentsSnap = await db.collection("users").doc(uid).collection("payments").orderBy("datetime","asc").get();
+    let status = "รอคำทำนาย";
+    let lastPayment = "";
     if(!paymentsSnap.empty){
-      lastPayment = paymentsSnap.docs[paymentsSnap.docs.length-1].data();
+      lastPayment = paymentsSnap.docs[paymentsSnap.docs.length-1].data().datetime || "";
+      // ตรวจสอบว่ามีคำทำนายแล้ว
+      const questionsSnap = await db.collection("users").doc(uid).collection("questions").get();
+      const allAnswered = questionsSnap.docs.every(q=>q.data().answer);
+      status = allAnswered? "ทำนายเสร็จแล้ว":"รอคำทำนาย";
     }
 
-    let status = "รอคำทำนาย";
-    let payDate = lastPayment ? lastPayment.datetime : "-";
+    // กรองตาม input
+    if(searchUsername && !userData.username.toLowerCase().includes(searchUsername)) continue;
+    if(filterStatus && status!==filterStatus) continue;
 
-    // ตรวจคำถาม
-    const questionsSnap = await db.collection("users").doc(userId).collection("questions").get();
-    const allAnswered = !questionsSnap.empty && questionsSnap.docs.every(q => q.data().status === "ทำนายเสร็จแล้ว");
-    if(allAnswered) status = "ทำนายแล้ว";
-
-    // filter
-    if(statusFilter === "pending" && status === "ทำนายแล้ว") continue;
-    if(statusFilter === "completed" && status !== "ทำนายแล้ว") continue;
-
-    customers.push({userId, username, payDate, status});
-  }
-
-  // sort
-  customers.sort((a,b)=>{
-    if(sortOrder==="asc") return (a.payDate||"") > (b.payDate||"") ? 1:-1;
-    else return (a.payDate||"") < (b.payDate||"") ? 1:-1;
-  });
-
-  customers.forEach((c,i)=>{
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${i+1}</td>
-      <td>${c.username}</td>
-      <td>${c.payDate}</td>
-      <td>${c.status}</td>
-      <td>
-        <button class="view ${c.status!=="ทำนายแล้ว"?"":"disabled"}" 
-          onclick="editCustomer('${c.userId}')">แก้ไข/เพิ่มคำทำนาย</button>
-      </td>
+      <td>${idx}</td>
+      <td>${userData.username||"-"}</td>
+      <td>${status}</td>
+      <td>${lastPayment}</td>
+      <td><button onclick="goToInfo('${uid}')">ดู/แก้ไขคำทำนาย</button></td>
     `;
     tbody.appendChild(tr);
-  });
+    idx++;
+  }
 }
 
-// ไปหน้า info
-function editCustomer(userId){
+// ไปหน้า admin-dashboard_info.html พร้อม userId
+function goToInfo(userId){
   window.location.href = `admin-dashboard_info.html?userId=${userId}`;
 }
 
+// โหลดตอนเริ่ม
+loadUsers();
 </script>
 </body>
 </html>
