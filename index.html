@@ -196,7 +196,7 @@
 
       auth.signInWithEmailAndPassword(username + "@horowednesday.com", password)
         .then((userCredential) => {
-          window.location.href = "dashboard.html";
+          window.location.href = "prediction.html";
         })
         .catch((error) => {
           document.getElementById('login-message').innerText = error.message;
