@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard Info - Horowednesday</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa',cursive;}
+body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff); min-height:100vh; padding:20px;}
+h1,h2{color:#5d4fa2; margin-bottom:10px;}
+.container{background:#fff; border-radius:15px; padding:20px; max-width:900px; margin:auto; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+label{font-weight:bold;}
+input,textarea,select,button{padding:8px 10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; margin:5px 0;}
+textarea{width:100%; min-height:60px; resize:vertical;}
+button{cursor:pointer; background:#7ec4ff; color:#fff; border:none; transition:0.3s; margin-top:10px;}
+button:hover{opacity:0.9;}
+table{width:100%; border-collapse:collapse; margin-top:10px;}
+th,td{border:1px solid #ccc; padding:8px; text-align:center; vertical-align:top;}
+th{background:#9d8de3; color:#fff;}
+.card-list{display:flex; gap:5px; flex-wrap:wrap; justify-content:center;}
+.card-item{width:60px; height:90px; background-size:cover; background-position:center; border-radius:5px;}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>รายละเอียดลูกค้า</h1>
+<div id="user-info">
+  <p><b>ชื่อ:</b> <span id="name"></span></p>
+  <p><b>วันเกิด:</b> <span id="birthday"></span></p>
+  <p><b>เพศ:</b> <span id="gender"></span></p>
+  <p><b>สถานะความสัมพันธ์:</b> <span id="relationship"></span></p>
+  <p><b>อาชีพ:</b> <span id="job"></span></p>
+  <p><b>Account LINE:</b> <span id="username"></span></p>
+</div>
+
+<h2>คำถามของลูกค้า</h2>
+<table id="questions-table">
+  <thead>
+    <tr>
+      <th>ลำดับ</th>
+      <th>คำถาม</th>
+      <th>ไพ่ที่เลือก</th>
+      <th>คำทำนาย</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<button onclick="savePredictions()">บันทึกคำทำนาย</button>
+<button onclick="goBack()">กลับ</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+  authDomain: "horowednesday.firebaseapp.com",
+  projectId: "horowednesday",
+  storageBucket: "horowednesday.appspot.com",
+  messagingSenderId: "604956033127",
+  appId: "1:604956033127:web:fec565a41020ccf28814c2",
+  measurementId: "G-B38JLFJPVS"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ดึง userId จาก query string
+const params = new URLSearchParams(window.location.search);
+const userId = params.get("userId");
+if(!userId){ alert("ไม่พบลูกค้า"); window.location.href="admin-dashboard.html"; }
+
+// โหลดข้อมูลลูกค้า
+async function loadUserData(){
+  const userDoc = await db.collection("users").doc(userId).get();
+  if(!userDoc.exists){ alert("ไม่พบข้อมูลลูกค้า"); return; }
+  const data = userDoc.data();
+  document.getElementById("name").innerText = data.name || "-";
+  document.getElementById("birthday").innerText = data.birthday || "-";
+  document.getElementById("gender").innerText = data.gender || "-";
+  document.getElementById("relationship").innerText = data.relationship || "-";
+  document.getElementById("job").innerText = data.job || "-";
+  document.getElementById("username").innerText = data.username || "-";
+
+  // โหลดคำถาม
+  const questionsSnap = await db.collection("users").doc(userId).collection("questions").get();
+  const tbody = document.querySelector("#questions-table tbody");
+  tbody.innerHTML = "";
+
+  let idx = 1;
+  questionsSnap.forEach(qDoc=>{
+    const q = qDoc.data();
+    const qId = qDoc.id;
+
+    let cardsHtml = "";
+    if(q.cards && q.cards.length>0){
+      cardsHtml = '<div class="card-list">'+q.cards.map(c=>`<div class="card-item" style="background-image:url('${c}')"></div>`).join('')+'</div>';
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx}</td>
+      <td>${q.question}</td>
+      <td>${cardsHtml}</td>
+      <td><textarea id="pred-${qId}">${q.answer||""}</textarea></td>
+    `;
+    tbody.appendChild(tr);
+    idx++;
+  });
+}
+
+loadUserData();
+
+// บันทึกคำทำนาย
+async function savePredictions(){
+  const questionsSnap = await db.collection("users").doc(userId).collection("questions").get();
+  const batch = db.batch();
+  questionsSnap.forEach(qDoc=>{
+    const qId = qDoc.id;
+    const pred = document.getElementById(`pred-${qId}`).value.trim();
+    const qRef = db.collection("users").doc(userId).collection("questions").doc(qId);
+    batch.update(qRef, {answer: pred, status: pred? "ทำนายเสร็จแล้ว":"รอคำทำนาย"});
+  });
+  await batch.commit();
+  alert("บันทึกคำทำนายเรียบร้อย");
+  window.location.href="admin-dashboard.html";
+}
+
+// กลับ
+function goBack(){
+  window.location.href="admin-dashboard.html";
+}
+</script>
+</body>
+</html>
