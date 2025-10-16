@@ -3,61 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Login</title>
+<title>Admin Login - Horowednesday</title>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
 <style>
-body{font-family:'Comfortaa',cursive; background:#b4e0ff; display:flex; justify-content:center; align-items:center; min-height:100vh;}
-.container{background:#fff; padding:30px; border-radius:15px; box-shadow:0 10px 20px rgba(0,0,0,0.1); width:300px; text-align:center;}
-input{width:100%; padding:10px; margin:8px 0; border-radius:8px; border:1px solid #ccc;}
-button{width:100%; padding:10px; border:none; border-radius:8px; background:#7ec4ff; color:#fff; cursor:pointer;}
+  body{font-family:'Comfortaa',cursive; background:linear-gradient(135deg,#b4e0ff,#d7c9ff); display:flex; justify-content:center; align-items:center; height:100vh; margin:0;}
+  .container{background:#fff; border-radius:15px; padding:30px; width:100%; max-width:400px; box-shadow:0 10px 20px rgba(0,0,0,0.1); text-align:center;}
+  input{width:100%; padding:12px; margin:10px 0; border-radius:10px; border:1px solid #ccc;}
+  button{width:100%; padding:12px; border:none; border-radius:12px; background:#7ec4ff; color:#fff; font-size:1rem; cursor:pointer; transition:0.3s;}
+  button:hover{opacity:0.9;}
 </style>
 </head>
 <body>
 <div class="container">
-<h2>Admin Login</h2>
-<input type="text" id="admin-username" placeholder="Username">
-<input type="password" id="admin-password" placeholder="Password">
-<button onclick="adminLogin()">Login</button>
-<div id="login-message" style="color:red; margin-top:10px;"></div>
+  <h2>เข้าสู่ระบบ Admin</h2>
+  <input type="text" id="admin-username" placeholder="Username">
+  <input type="password" id="admin-password" placeholder="Password">
+  <button onclick="adminLogin()">Login</button>
+  <div id="login-message" style="color:red; margin-top:10px;"></div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
-  authDomain: "horowednesday.firebaseapp.com",
-  projectId: "horowednesday",
-  storageBucket: "horowednesday.appspot.com",
-  messagingSenderId: "604956033127",
-  appId: "1:604956033127:web:fec565a41020ccf28814c2"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-async function adminLogin(){
+function adminLogin() {
   const username = document.getElementById("admin-username").value.trim();
-  const password = document.getElementById("admin-password").value;
-  const loginMsg = document.getElementById("login-message");
+  const password = document.getElementById("admin-password").value.trim();
 
-  try{
-    const adminSnap = await db.collection("admin").get();
-    let valid = false;
-    adminSnap.forEach(doc=>{
-      const data = doc.data();
-      if(data.username === username && data.password === password){
-        valid = true;
-      }
-    });
-    if(valid){
-      sessionStorage.setItem("adminLoggedIn", "true");
-      window.location.href = "admin-dashboard.html";
-    } else {
-      loginMsg.innerText = "Username หรือ Password ไม่ถูกต้อง";
-    }
-  } catch(err){
-    loginMsg.innerText = err.message;
+  // Hardcode credentials
+  if(username === "Wanida" && password === "wanihoro11") {
+    localStorage.setItem("isAdmin","true");
+    window.location.href = "admin-dashboard.html";
+  } else {
+    document.getElementById("login-message").innerText = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
   }
 }
 </script>
