@@ -9,13 +9,13 @@
 *{margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa',cursive;}
 body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff); padding:20px; min-height:100vh;}
 h1{color:#5d4fa2; margin-bottom:20px;}
-.container{background:#fff; border-radius:15px; padding:20px; max-width:900px; margin:auto; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+.container{background:#fff; border-radius:15px; padding:20px; max-width:1000px; margin:auto; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
 table{width:100%; border-collapse:collapse;}
 th,td{border:1px solid #ccc; padding:8px; text-align:center;}
 th{background:#9d8de3; color:#fff;}
 button{padding:6px 12px; border:none; border-radius:8px; background:#7ec4ff; color:#fff; cursor:pointer; transition:0.3s;}
 button:hover{opacity:0.9;}
-select,input{padding:6px 8px; margin:5px;}
+input,select{padding:6px 8px; margin:5px;}
 </style>
 </head>
 <body>
@@ -39,11 +39,11 @@ select,input{padding:6px 8px; margin:5px;}
       <th>Username</th>
       <th>สถานะการทำนาย</th>
       <th>วันที่ชำระเงิน</th>
-      <th>จัดการ</th>
+      <th>แก้ไขข้อมูล/ทำนาย</th>
     </tr>
   </thead>
   <tbody id="user-list">
-    <!-- ข้อมูลลูกค้าแสดงที่นี่ -->
+    <!-- ข้อมูลลูกค้า -->
   </tbody>
 </table>
 </div>
@@ -52,6 +52,7 @@ select,input{padding:6px 8px; margin:5px;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
   authDomain: "horowednesday.firebaseapp.com",
@@ -64,10 +65,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// โหลดข้อมูลลูกค้า
 async function loadUsers(){
   const tbody = document.getElementById("user-list");
   tbody.innerHTML = "";
-
   const searchUsername = document.getElementById("search-username").value.trim().toLowerCase();
   const filterStatus = document.getElementById("filter-status").value;
 
@@ -78,28 +79,33 @@ async function loadUsers(){
     const userData = userDoc.data();
     const uid = userDoc.id;
 
-    // ดึงข้อมูล payments ล่าสุดเพื่อดูสถานะการทำนาย
-    const paymentsSnap = await db.collection("users").doc(uid).collection("payments").orderBy("datetime","asc").get();
+    // กรอง username
+    if(searchUsername && !userData.username.toLowerCase().includes(searchUsername)) continue;
+
+    // ดึงคำถามเพื่อเช็คสถานะ
+    const questionsSnap = await db.collection("users").doc(uid).collection("questions").get();
     let status = "รอคำทำนาย";
-    let lastPayment = "";
-    if(!paymentsSnap.empty){
-      lastPayment = paymentsSnap.docs[paymentsSnap.docs.length-1].data().datetime || "";
-      // ตรวจสอบว่ามีคำทำนายแล้ว
-      const questionsSnap = await db.collection("users").doc(uid).collection("questions").get();
-      const allAnswered = questionsSnap.docs.every(q=>q.data().answer);
-      status = allAnswered? "ทำนายเสร็จแล้ว":"รอคำทำนาย";
+    if(!questionsSnap.empty){
+      const allAnswered = questionsSnap.docs.every(q=>q.data().answer && q.data().answer.trim()!=="");
+      status = allAnswered ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
     }
 
-    // กรองตาม input
-    if(searchUsername && !userData.username.toLowerCase().includes(searchUsername)) continue;
+    // กรองสถานะ
     if(filterStatus && status!==filterStatus) continue;
+
+    // ดึงวันที่ชำระเงินล่าสุด
+    let lastDate = "-";
+    const paymentsSnap = await db.collection("users").doc(uid).collection("payments").orderBy("datetime","asc").get();
+    if(!paymentsSnap.empty){
+      lastDate = paymentsSnap.docs[paymentsSnap.docs.length-1].data().datetime || "-";
+    }
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${idx}</td>
-      <td>${userData.username||"-"}</td>
+      <td>${userData.username || "-"}</td>
       <td>${status}</td>
-      <td>${lastPayment}</td>
+      <td>${lastDate}</td>
       <td><button onclick="goToInfo('${uid}')">ดู/แก้ไขคำทำนาย</button></td>
     `;
     tbody.appendChild(tr);
