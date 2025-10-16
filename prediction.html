@@ -15,10 +15,12 @@ header h1{color:#5d4fa2;font-size:1.5rem;}
 header button{padding:8px 12px;border:none;border-radius:10px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
 header button:hover{transform:scale(1.05);}
 #add-btn{background:#7ec4ff;margin-left:10px;}
-.user-info{background:#f3f0ff;padding:10px;margin-bottom:15px;border-radius:12px;}
+.user-info, .user-edit-form{background:#f3f0ff;padding:10px;margin-bottom:15px;border-radius:12px;}
 .user-info p{margin:5px 0;color:#5d4fa2;font-weight:bold;}
-.user-info button{padding:5px 10px;border:none;border-radius:8px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
-.user-info button:hover{transform:scale(1.05);}
+.user-info button, .user-edit-form button{padding:5px 10px;border:none;border-radius:8px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;margin-top:5px;}
+.user-info button:hover, .user-edit-form button:hover{transform:scale(1.05);}
+.user-edit-form label{display:block;margin:5px 0;color:#5d4fa2;}
+.user-edit-form input{width:100%;padding:5px;border-radius:6px;border:1px solid #ccc;}
 table{width:100%;border-collapse:collapse;margin-top:15px;}
 th,td{border:1px solid #ccc;padding:8px;text-align:center;border-radius:8px;}
 th{background:#d7cfff;color:#5d4fa2;}
@@ -43,7 +45,8 @@ td button.gray{background:#aaa;cursor:not-allowed;}
   </div>
 </header>
 
-<div class="user-info">
+<!-- ข้อมูลผู้ใช้ -->
+<div class="user-info" id="user-info">
   <p><strong>ชื่อ:</strong> <span id="user-name"></span></p>
   <p><strong>วันเกิด:</strong> <span id="user-birth"></span></p>
   <p><strong>เพศ:</strong> <span id="user-gender"></span></p>
@@ -52,6 +55,18 @@ td button.gray{background:#aaa;cursor:not-allowed;}
   <button onclick="editUserInfo()">แก้ไขข้อมูล</button>
 </div>
 
+<!-- ฟอร์มแก้ไขข้อมูล -->
+<div class="user-edit-form" id="user-edit-form" style="display:none;">
+  <label>ชื่อ: <input type="text" id="edit-name"></label>
+  <label>วันเกิด: <input type="text" id="edit-birth"></label>
+  <label>เพศ: <input type="text" id="edit-gender"></label>
+  <label>อาชีพ: <input type="text" id="edit-job"></label>
+  <label>สถานะความสัมพันธ์: <input type="text" id="edit-relationship"></label>
+  <button onclick="saveUserInfo()">เสร็จสิ้น</button>
+  <button onclick="cancelEdit()">ยกเลิก</button>
+</div>
+
+<!-- ตารางรายการคำถาม -->
 <table>
   <thead>
     <tr>
@@ -123,11 +138,21 @@ async function loadUserInfo(){
 }
 
 function editUserInfo(){
-  const newName = prompt("ชื่อ:", document.getElementById('user-name').innerText);
-  const newBirth = prompt("วันเกิด:", document.getElementById('user-birth').innerText);
-  const newGender = prompt("เพศ:", document.getElementById('user-gender').innerText);
-  const newJob = prompt("อาชีพ:", document.getElementById('user-job').innerText);
-  const newRelationship = prompt("สถานะความสัมพันธ์:", document.getElementById('user-status').innerText);
+  document.getElementById('user-info').style.display='none';
+  document.getElementById('user-edit-form').style.display='block';
+  document.getElementById('edit-name').value = document.getElementById('user-name').innerText;
+  document.getElementById('edit-birth').value = document.getElementById('user-birth').innerText;
+  document.getElementById('edit-gender').value = document.getElementById('user-gender').innerText;
+  document.getElementById('edit-job').value = document.getElementById('user-job').innerText;
+  document.getElementById('edit-relationship').value = document.getElementById('user-status').innerText;
+}
+
+function saveUserInfo(){
+  const newName = document.getElementById('edit-name').value;
+  const newBirth = document.getElementById('edit-birth').value;
+  const newGender = document.getElementById('edit-gender').value;
+  const newJob = document.getElementById('edit-job').value;
+  const newRelationship = document.getElementById('edit-relationship').value;
 
   db.collection('users').doc(currentUser.uid).update({
     name: newName,
@@ -137,9 +162,15 @@ function editUserInfo(){
     relationship: newRelationship
   }).then(()=>{
     loadUserInfo();
+    cancelEdit();
   }).catch(err=>{
     alert("แก้ไขข้อมูลไม่สำเร็จ: " + err.message);
   });
+}
+
+function cancelEdit(){
+  document.getElementById('user-edit-form').style.display='none';
+  document.getElementById('user-info').style.display='block';
 }
 
 async function loadPredictions(){
