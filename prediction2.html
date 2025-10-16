@@ -3,69 +3,125 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prediction Detail - Horowednesday</title>
-<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+<title>Horowednesday Prediction Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
 <style>
-body{font-family:'Comfortaa',cursive; background:linear-gradient(135deg,#b4e0ff,#d7c9ff); padding:20px;}
-.container{background:#fff; border-radius:15px; padding:20px; max-width:600px; margin:auto; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
-h1{color:#5d4fa2;}
-p{margin:10px 0;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Baloo 2', cursive;}
+body{background:linear-gradient(135deg,#c3bef0,#b4e0ff);padding:10px;}
+.container{max-width:700px;margin:0 auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
+h1{color:#5d4fa2;margin-bottom:15px;}
+table{width:100%;border-collapse:collapse;margin-top:15px;}
+th,td{border:1px solid #ccc;padding:8px;text-align:center;border-radius:8px;}
+th{background:#d7cfff;color:#5d4fa2;}
+textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;border:1px solid #ccc;}
+button{padding:6px 12px;margin-top:5px;border:none;border-radius:8px;background:#7ec4ff;color:#fff;cursor:pointer;}
+.cards img{width:50px;height:75px;margin-right:5px;border-radius:6px;}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>คำทำนาย</h1>
-<p id="question"></p>
-<p id="cards"></p>
-<p id="answer"></p>
-<button onclick="goBack()">กลับ</button>
+<h1>รายละเอียดคำถามและคำทำนาย</h1>
+<button onclick="goBack()">ย้อนกลับ</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>ลำดับ</th>
+      <th>วันที่</th>
+      <th>คำถาม</th>
+      <th>ราคา</th>
+      <th>คำทำนาย</th>
+      <th>ไพ่ที่เลือก</th>
+    </tr>
+  </thead>
+  <tbody id="prediction-detail">
+    <tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>
+  </tbody>
+</table>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
   authDomain: "horowednesday.firebaseapp.com",
   projectId: "horowednesday",
-  storageBucket: "horowednesday.appspot.com",
+  storageBucket: "horowednesday.firebasestorage.app",
   messagingSenderId: "604956033127",
   appId: "1:604956033127:web:fec565a41020ccf28814c2",
   measurementId: "G-B38JLFJPVS"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 const auth = firebase.auth();
+const db = firebase.firestore();
 
+let currentUser;
+let questionId;
+
+// ดึง questionId จาก query string
 const urlParams = new URLSearchParams(window.location.search);
-const questionId = urlParams.get("questionId");
-let currentUser = null;
+questionId = urlParams.get('questionId');
 
 auth.onAuthStateChanged(user=>{
   if(user){
-    currentUser = user;
-    loadQuestionDetail();
+    currentUser=user;
+    loadPredictionDetail();
   } else {
-    window.location.href = "index.html";
+    window.location.href="index.html";
   }
 });
 
-function loadQuestionDetail(){
-  db.collection("users").doc(currentUser.uid).collection("questions").doc(questionId).get().then(doc=>{
-    if(doc.exists){
-      const data = doc.data();
-      document.getElementById("question").innerText = `คำถาม: ${data.question || "-"}`;
-      document.getElementById("cards").innerText = `ไพ่: ${(data.cards || []).join(", ")}`;
-      document.getElementById("answer").innerText = `คำทำนาย: ${data.answer || "ยังไม่ได้รับคำทำนาย"}`;
+function goBack(){ window.history.back(); }
+
+async function loadPredictionDetail(){
+  const tbody = document.getElementById('prediction-detail');
+  tbody.innerHTML='<tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>';
+
+  try{
+    const docRef = db.collection('users').doc(currentUser.uid)
+      .collection('questions').doc(questionId);
+    const docSnap = await docRef.get();
+
+    if(!docSnap.exists){
+      tbody.innerHTML='<tr><td colspan="6">ไม่พบข้อมูล</td></tr>';
+      return;
     }
-  });
+
+    const data = docSnap.data();
+    const date = data.timestamp?.toDate().toLocaleString() || '-';
+    const price = data.payment || '-'; // สมมติเก็บราคาใน field payment
+    const prediction = data.prediction || '';
+    const question = data.question || '';
+    const cards = data.cards || [];
+
+    const cardHTML = cards.map(c=>`<img src="https://raw.githubusercontent.com/username/repo/main/assets/images/tarot/${c.replace(/ /g,'_')}.png" title="${c}">`).join('');
+
+    tbody.innerHTML=`
+      <tr>
+        <td>1</td>
+        <td>${date}</td>
+        <td>${question}</td>
+        <td>${price}</td>
+        <td><textarea id="prediction-text" rows="4">${prediction}</textarea><br><button onclick="savePrediction()">บันทึกคำทำนาย</button></td>
+        <td class="cards">${cardHTML}</td>
+      </tr>
+    `;
+  } catch(err){
+    tbody.innerHTML=`<tr><td colspan="6">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+  }
 }
 
-function goBack(){
-  window.location.href = "prediction.html";
+function savePrediction(){
+  const text = document.getElementById('prediction-text').value.trim();
+  if(!text) return alert("กรุณากรอกคำทำนาย");
+
+  db.collection('users').doc(currentUser.uid)
+    .collection('questions').doc(questionId)
+    .update({prediction:text})
+    .then(()=>alert("บันทึกคำทำนายเรียบร้อย!"));
 }
 </script>
 </body>
