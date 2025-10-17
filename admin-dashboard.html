@@ -39,7 +39,7 @@ input,select{padding:6px 8px; margin:5px;}
       <th>Username</th>
       <th>สถานะการทำนาย</th>
       <th>วันที่ชำระเงิน</th>
-      <th>แก้ไขคำทำนาย</th>
+      <th>แก้ไขทำนาย</th>
     </tr>
   </thead>
   <tbody id="user-list">
@@ -53,11 +53,13 @@ input,select{padding:6px 8px; margin:5px;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
+const ADMIN_UID = "COSNiC8qzrP6dfWiumqLETrROuu2";
+
 const firebaseConfig = {
   apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
   authDomain: "horowednesday.firebaseapp.com",
   projectId: "horowednesday",
-  storageBucket: "horowednesday.appspot.com",
+  storageBucket: "horowednesday.firebasestorage.app",
   messagingSenderId: "604956033127",
   appId: "1:604956033127:web:fec565a41020ccf28814c2",
   measurementId: "G-B38JLFJPVS"
@@ -66,33 +68,29 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// UID ของแอดมิน
-const ADMIN_UID = "ADMIN_UID_HERE"; // <-- แก้เป็น UID ของแอดมินจริง
-
 let currentUser;
 
 auth.onAuthStateChanged(user=>{
   if(user){
-    currentUser=user;
-    if(currentUser.uid !== ADMIN_UID){
-      alert("สิทธิ์ไม่เพียงพอ");
-      window.location.href="index.html";
-    } else {
-      loadUsers();
+    currentUser = user;
+    if(user.uid !== ADMIN_UID){
+      alert("คุณไม่ได้รับสิทธิ์เข้าหน้านี้");
+      auth.signOut();
+      return;
     }
+    loadUsers();
   } else {
-    window.location.href="index.html";
+    window.location.href="admin-login.html";
   }
 });
 
 async function loadUsers(){
   const tbody = document.getElementById("user-list");
   tbody.innerHTML = "<tr><td colspan='5'>กำลังโหลดข้อมูล...</td></tr>";
-
   const searchUsername = document.getElementById("search-username").value.trim().toLowerCase();
   const filterStatus = document.getElementById("filter-status").value;
 
-  try {
+  try{
     const usersSnap = await db.collection("users").get();
     let idx = 1;
     tbody.innerHTML = "";
@@ -101,19 +99,20 @@ async function loadUsers(){
       const userData = userDoc.data();
       const uid = userDoc.id;
 
-      if(searchUsername && !(userData.username || "").toLowerCase().includes(searchUsername)) continue;
+      // กรอง username
+      if(searchUsername && !userData.username?.toLowerCase().includes(searchUsername)) continue;
 
-      // ดึงคำถามเพื่อเช็คสถานะ
+      // ตรวจสอบคำถามเพื่อดูสถานะ
       const questionsSnap = await db.collection("users").doc(uid).collection("questions").get();
       let status = "รอคำทำนาย";
       if(!questionsSnap.empty){
-        const allAnswered = questionsSnap.docs.every(q=>q.data().prediction && q.data().prediction.trim()!=="");
+        const allAnswered = questionsSnap.docs.every(q => q.data().prediction && q.data().prediction.trim() !== "");
         status = allAnswered ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
       }
 
-      if(filterStatus && status!==filterStatus) continue;
+      if(filterStatus && status !== filterStatus) continue;
 
-      // ดึงวันที่ชำระเงินล่าสุด
+      // วันที่ชำระเงินล่าสุด
       let lastDate = "-";
       const paymentsSnap = await db.collection("users").doc(uid).collection("payments").orderBy("datetime","asc").get();
       if(!paymentsSnap.empty){
@@ -126,14 +125,13 @@ async function loadUsers(){
         <td>${userData.username || "-"}</td>
         <td>${status}</td>
         <td>${lastDate}</td>
-        <td><button onclick="goToInfo('${uid}')">แก้ไขคำทำนาย</button></td>
+        <td><button onclick="goToInfo('${uid}')">แก้ไขทำนาย</button></td>
       `;
       tbody.appendChild(tr);
       idx++;
     }
 
-    if(tbody.innerHTML === "") tbody.innerHTML = "<tr><td colspan='5'>ไม่พบข้อมูล</td></tr>";
-
+    if(tbody.innerHTML === "") tbody.innerHTML="<tr><td colspan='5'>ไม่พบข้อมูล</td></tr>";
   } catch(err){
     tbody.innerHTML = `<tr><td colspan='5'>เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
   }
