@@ -15,16 +15,16 @@ th,td{border:1px solid #ccc;padding:8px;text-align:center;}
 th{background:#9d8de3;color:#fff;}
 button{padding:6px 12px;border:none;border-radius:8px;background:#7ec4ff;color:#fff;cursor:pointer;transition:0.3s;}
 button:hover{opacity:0.9;}
-.logout-btn{background:#f36f6f;margin-bottom:15px;}
+.cards img{width:40px;height:60px;margin:0 3px;border-radius:5px;}
 </style>
 </head>
 <body>
 <div class="container">
 <h1>ข้อมูลลูกค้า</h1>
 
-<button class="logout-btn" onclick="logout()">Log out</button>
+<button onclick="goBack()">← กลับ</button>
 
-<div id="user-info">
+<div id="user-info" style="margin-top:15px;">
 <p><strong>Username:</strong> <span id="username"></span></p>
 <p><strong>Name:</strong> <span id="name"></span></p>
 <p><strong>วันเกิด:</strong> <span id="birth"></span></p>
@@ -43,11 +43,10 @@ button:hover{opacity:0.9;}
 <th>คำถาม</th>
 <th>ไพ่ที่เลือก</th>
 <th>คำทำนาย</th>
-<th>แก้ไขคำถาม/คำทำนาย</th>
 </tr>
 </thead>
 <tbody id="question-list">
-<tr><td colspan="7">กำลังโหลดข้อมูล...</td></tr>
+<tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>
 </tbody>
 </table>
 
@@ -102,9 +101,7 @@ auth.onAuthStateChanged(user=>{
   }
 });
 
-function logout(){
-  auth.signOut().then(()=>window.location.href="admin-login.html");
-}
+function goBack(){ window.location.href="admin-dashboard.html"; }
 
 async function loadUserInfo(){
   const doc = await db.collection("users").doc(userId).get();
@@ -128,8 +125,8 @@ async function loadQuestions(){
     const data = doc.data();
     const date = data.timestamp?.toDate().toLocaleString() || "-";
     const status = data.prediction && data.prediction.trim()!=="" ? "ทำนายแล้ว" : "รอคำทำนาย";
+    const cards = (data.cards || []).join(", ");
     const prediction = data.prediction || "-";
-    const cards = data.cards ? data.cards.join(", ") : "-";
     const tr = document.createElement("tr");
     tr.innerHTML=`
       <td>${idx}</td>
@@ -138,21 +135,11 @@ async function loadQuestions(){
       <td>${data.question || "-"}</td>
       <td>${cards}</td>
       <td>${prediction}</td>
-      <td><button onclick="editPrediction('${doc.id}')">แก้ไข</button></td>
     `;
     tbody.appendChild(tr);
     idx++;
   });
-}
-
-function editPrediction(questionId){
-  const newQuestion = prompt("แก้ไขคำถาม");
-  const newPrediction = prompt("แก้ไขคำทำนาย");
-  const qRef = db.collection("users").doc(userId).collection("questions").doc(questionId);
-  qRef.update({question:newQuestion, prediction:newPrediction}).then(()=>{
-    alert("แก้ไขเรียบร้อย");
-    loadQuestions();
-  }).catch(err=>alert(err.message));
+  if(tbody.innerHTML==="") tbody.innerHTML="<tr><td colspan='6'>ไม่มีคำถาม</td></tr>";
 }
 
 async function loadPayments(){
@@ -171,8 +158,8 @@ async function loadPayments(){
     `;
     tbody.appendChild(tr);
   });
+  if(tbody.innerHTML==="") tbody.innerHTML="<tr><td colspan='5'>ไม่มีการชำระเงิน</td></tr>";
 }
 </script>
 </body>
 </html>
-
