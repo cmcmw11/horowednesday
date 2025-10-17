@@ -1,138 +1,135 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horowednesday Prediction</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Baloo 2', cursive;}
-body{background:linear-gradient(135deg,#c3bef0,#b4e0ff);padding:10px;}
-.container{max-width:700px;margin:0 auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;}
-header img{width:50px;height:50px;border-radius:50%;}
-header h1{color:#5d4fa2;font-size:1.5rem;}
-header button{padding:8px 12px;border:none;border-radius:10px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
-header button:hover{transform:scale(1.05);}
-#add-btn{background:#7ec4ff;margin-left:10px;}
-table{width:100%;border-collapse:collapse;margin-top:15px;}
-th,td{border:1px solid #ccc;padding:8px;text-align:center;border-radius:8px;}
-th{background:#d7cfff;color:#5d4fa2;}
-td button{padding:5px 10px;border:none;border-radius:8px;color:#fff;cursor:pointer;transition:0.3s;}
-td button.green{background:#4caf50;}
-td button.gray{background:#aaa;cursor:not-allowed;}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horowednesday - รายการคำถามของคุณ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Comfortaa', cursive; background: linear-gradient(135deg,#d4e0ff,#e6d6ff); margin:0; padding:0; }
+    .container { max-width:900px; margin:30px auto; background:#fff; padding:30px; border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,0.1); }
+    h1 { text-align:center; color:#5d4fa2; }
+    h2 { color:#5d4fa2; margin-top:20px; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { padding:10px; text-align:center; border-bottom:1px solid #ddd; }
+    th { background:#f3f1ff; color:#5d4fa2; }
+    button { background:linear-gradient(135deg,#9d8de3,#7ec4ff); color:white; border:none; padding:8px 14px; border-radius:10px; cursor:pointer; transition:0.3s; }
+    button:hover { transform:scale(1.05); }
+    .user-info { background:#f9f8ff; border-radius:15px; padding:15px; margin-top:10px; }
+    .user-info p { margin:5px 0; color:#5d4fa2; }
+    .logout { float:right; background:#ff9a9e; }
+  </style>
 </head>
 <body>
-<div class="container">
-<header>
-  <img src="https://raw.githubusercontent.com/username/repo/main/assets/images/wednesdaylogo.png" alt="Logo">
-  <h1>รายการทำนาย</h1>
-  <div>
-    <button onclick="logout()">Log out</button>
-    <button id="add-btn" onclick="goDashboard()">เพิ่มคำถาม</button>
+  <div class="container">
+    <h1>รายการคำถามของคุณ</h1>
+    <button class="logout" onclick="logout()">ออกจากระบบ</button>
+
+    <h2>ข้อมูลส่วนตัว</h2>
+    <div class="user-info" id="user-info">
+      <p>ชื่อ: -</p>
+      <p>วันเกิด: -</p>
+      <p>เพศ: -</p>
+      <p>อาชีพ: -</p>
+      <p>สถานะความสัมพันธ์: -</p>
+    </div>
+
+    <h2>รายการคำถาม</h2>
+    <table id="questions-table">
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>วันที่</th>
+          <th>สถานะ</th>
+          <th>คำถาม</th>
+          <th>การจัดการ</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
-</header>
 
-<table>
-  <thead>
-    <tr>
-      <th>ลำดับ</th>
-      <th>คำถาม</th>
-      <th>วันที่</th>
-      <th>สถานะ</th>
-      <th>แก้ไข/ดูคำทำนาย</th>
-    </tr>
-  </thead>
-  <tbody id="question-list">
-    <tr><td colspan="5">กำลังโหลดข้อมูล...</td></tr>
-  </tbody>
-</table>
-</div>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+      authDomain: "horowednesday.firebaseapp.com",
+      projectId: "horowednesday",
+      storageBucket: "horowednesday.firebasestorage.app",
+      messagingSenderId: "604956033127",
+      appId: "1:604956033127:web:fec565a41020ccf28814c2",
+      measurementId: "G-B38JLFJPVS"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    let currentUser;
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
-  authDomain: "horowednesday.firebaseapp.com",
-  projectId: "horowednesday",
-  storageBucket: "horowednesday.firebasestorage.app",
-  messagingSenderId: "604956033127",
-  appId: "1:604956033127:web:fec565a41020ccf28814c2",
-  measurementId: "G-B38JLFJPVS"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentUser = user;
+      loadUserInfo();
+      loadQuestions();
+    });
 
-let currentUser;
-
-auth.onAuthStateChanged(user=>{
-  if(user){
-    currentUser=user;
-    loadQuestions();
-  } else {
-    window.location.href="index.html";
-  }
-});
-
-function logout(){ auth.signOut().then(()=>window.location.href="index.html"); }
-function goDashboard(){ window.location.href="dashboard.html"; }
-
-async function loadQuestions(){
-  const tbody = document.getElementById('question-list');
-  tbody.innerHTML='<tr><td colspan="5">กำลังโหลดข้อมูล...</td></tr>';
-
-  try{
-    const snapshot = await db.collection('users').doc(currentUser.uid)
-      .collection('questions').orderBy('timestamp','desc').get();
-
-    if(snapshot.empty){
-      tbody.innerHTML='<tr><td colspan="5">ยังไม่มีคำถาม</td></tr>';
-      return;
+    // โหลดข้อมูลส่วนตัวลูกค้า
+    function loadUserInfo() {
+      db.collection("users").doc(currentUser.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("user-info").innerHTML = `
+            <p>ชื่อ: ${data.name || "-"}</p>
+            <p>วันเกิด: ${data.birth || "-"}</p>
+            <p>เพศ: ${data.gender || "-"}</p>
+            <p>อาชีพ: ${data.job || "-"}</p>
+            <p>สถานะความสัมพันธ์: ${data.relationship || "-"}</p>
+          `;
+        }
+      });
     }
 
-    tbody.innerHTML='';
-    let idx=1;
-    snapshot.forEach(doc=>{
-      const data = doc.data();
-      const date = data.timestamp?.toDate().toLocaleString() || '-';
-      const hasPrediction = data.prediction && data.prediction.trim()!=='';
-      const status = hasPrediction ? 'ทำนายแล้ว' : 'รอทำนาย';
-      const btnClass = hasPrediction ? 'green' : 'gray';
-      const btnDisabled = hasPrediction ? '' : 'onclick="editQuestion(\''+doc.id+'\')"' ;
+    // โหลดคำถามทั้งหมดของลูกค้า
+    function loadQuestions() {
+      const tbody = document.querySelector("#questions-table tbody");
+      tbody.innerHTML = "";
+      db.collection("users").doc(currentUser.uid).collection("questions")
+        .orderBy("timestamp", "desc")
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            tbody.innerHTML = `<tr><td colspan="5">ยังไม่มีคำถาม</td></tr>`;
+            return;
+          }
+          let i = 1;
+          snapshot.forEach(doc => {
+            const q = doc.data();
+            const date = q.timestamp ? q.timestamp.toDate().toLocaleString("th-TH") : "-";
+            tbody.innerHTML += `
+              <tr>
+                <td>${i++}</td>
+                <td>${date}</td>
+                <td>${q.status || "-"}</td>
+                <td>${q.question || "-"}</td>
+                <td><button onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button></td>
+              </tr>
+            `;
+          });
+        });
+    }
 
-      const tr = document.createElement('tr');
-      tr.innerHTML=`
-        <td>${idx}</td>
-        <td>${data.question}</td>
-        <td>${date}</td>
-        <td>${status}</td>
-        <td><button class="${btnClass}" ${btnDisabled} ${hasPrediction ? 'onclick="goPrediction2(\''+doc.id+'\')"' : ''}>${hasPrediction?'ดูคำทำนาย':'แก้ไขคำถาม'}</button></td>
-      `;
-      tbody.appendChild(tr);
-      idx++;
-    });
-  }catch(err){
-    tbody.innerHTML=`<tr><td colspan="5">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
-  }
-}
+    function viewPrediction(questionId) {
+      window.location.href = `prediction2.html?uid=${currentUser.uid}&qid=${questionId}`;
+    }
 
-function editQuestion(docId){
-  const newQ = prompt("แก้ไขคำถาม:");
-  if(newQ){
-    db.collection('users').doc(currentUser.uid)
-      .collection('questions').doc(docId).update({question:newQ})
-      .then(()=>loadQuestions());
-  }
-}
-
-function goPrediction2(docId){
-  window.location.href = `prediction2.html?questionId=${docId}`;
-}
-</script>
+    function logout() {
+      auth.signOut().then(() => window.location.href = "index.html");
+    }
+  </script>
 </body>
 </html>
