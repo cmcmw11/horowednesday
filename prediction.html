@@ -15,22 +15,12 @@ header h1{color:#5d4fa2;font-size:1.5rem;}
 header button{padding:8px 12px;border:none;border-radius:10px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
 header button:hover{transform:scale(1.05);}
 #add-btn{background:#7ec4ff;margin-left:10px;}
-.user-info{background:#f3f0ff;padding:10px;margin-bottom:15px;border-radius:12px;}
-.user-info p{margin:5px 0;color:#5d4fa2;font-weight:bold;}
-.user-info button{padding:5px 10px;border:none;border-radius:8px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
-.user-info button:hover{transform:scale(1.05);}
 table{width:100%;border-collapse:collapse;margin-top:15px;}
 th,td{border:1px solid #ccc;padding:8px;text-align:center;border-radius:8px;}
 th{background:#d7cfff;color:#5d4fa2;}
 td button{padding:5px 10px;border:none;border-radius:8px;color:#fff;cursor:pointer;transition:0.3s;}
 td button.green{background:#4caf50;}
 td button.gray{background:#aaa;cursor:not-allowed;}
-.cards img{width:50px;height:75px;margin-right:5px;border-radius:6px;}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;}
-.modal-content{background:#fff;padding:20px;border-radius:20px;max-width:400px;position:relative;}
-.modal-content h2{margin-bottom:10px;color:#5d4fa2;}
-.close-btn{position:absolute;top:10px;right:10px;cursor:pointer;font-size:1.2rem;}
-textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;border:1px solid #ccc;}
 </style>
 </head>
 <body>
@@ -40,30 +30,22 @@ textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;border:1px soli
   <h1>รายการทำนาย</h1>
   <div>
     <button onclick="logout()">Log out</button>
-    <button id="add-btn" onclick="goDashboard()">เพิ่มรายการ</button>
+    <button id="add-btn" onclick="goDashboard()">เพิ่มคำถาม</button>
   </div>
 </header>
-
-<div class="user-info">
-  <p><strong>ชื่อ:</strong> <span id="user-name"></span></p>
-  <p><strong>วันเกิด:</strong> <span id="user-birth"></span></p>
-  <p><strong>เพศ:</strong> <span id="user-gender"></span></p>
-  <p><strong>อาชีพ:</strong> <span id="user-job"></span></p>
-  <p><strong>สถานะความสัมพันธ์:</strong> <span id="user-status"></span></p>
-  <button onclick="editUserInfo()">แก้ไขข้อมูล</button>
-</div>
 
 <table>
   <thead>
     <tr>
       <th>ลำดับ</th>
+      <th>คำถาม</th>
       <th>วันที่</th>
       <th>สถานะ</th>
-      <th>คำถาม / ดูคำทำนาย</th>
+      <th>แก้ไข/ดูคำทำนาย</th>
     </tr>
   </thead>
-  <tbody id="prediction-list">
-    <tr><td colspan="4">กำลังโหลดข้อมูล...</td></tr>
+  <tbody id="question-list">
+    <tr><td colspan="5">กำลังโหลดข้อมูล...</td></tr>
   </tbody>
 </table>
 </div>
@@ -91,8 +73,7 @@ let currentUser;
 auth.onAuthStateChanged(user=>{
   if(user){
     currentUser=user;
-    loadUserInfo();
-    loadPredictions();
+    loadQuestions();
   } else {
     window.location.href="index.html";
   }
@@ -101,35 +82,16 @@ auth.onAuthStateChanged(user=>{
 function logout(){ auth.signOut().then(()=>window.location.href="index.html"); }
 function goDashboard(){ window.location.href="dashboard.html"; }
 
-async function loadUserInfo(){
-  const doc = await db.collection('users').doc(currentUser.uid).get();
-  if(doc.exists){
-    const data = doc.data();
-    document.getElementById('user-name').innerText = data.name || '';
-    document.getElementById('user-birth').innerText = data.birthday || '';
-    document.getElementById('user-gender').innerText = data.gender || '';
-    document.getElementById('user-job').innerText = data.job || '';
-    document.getElementById('user-status').innerText = data.relationship || '';
-  }
-}
+async function loadQuestions(){
+  const tbody = document.getElementById('question-list');
+  tbody.innerHTML='<tr><td colspan="5">กำลังโหลดข้อมูล...</td></tr>';
 
-function editUserInfo(){
-  const newName = prompt("ชื่อ:", document.getElementById('user-name').innerText);
-  if(newName){
-    db.collection('users').doc(currentUser.uid).update({name:newName}).then(()=>loadUserInfo());
-  }
-}
-
-async function loadPredictions(){
-  const tbody = document.getElementById('prediction-list');
-  tbody.innerHTML='<tr><td colspan="4">กำลังโหลดข้อมูล...</td></tr>';
-
-  try {
+  try{
     const snapshot = await db.collection('users').doc(currentUser.uid)
       .collection('questions').orderBy('timestamp','desc').get();
 
     if(snapshot.empty){
-      tbody.innerHTML='<tr><td colspan="4">ยังไม่มีคำถาม</td></tr>';
+      tbody.innerHTML='<tr><td colspan="5">ยังไม่มีคำถาม</td></tr>';
       return;
     }
 
@@ -138,42 +100,38 @@ async function loadPredictions(){
     snapshot.forEach(doc=>{
       const data = doc.data();
       const date = data.timestamp?.toDate().toLocaleString() || '-';
-      const hasPrediction = data.prediction && data.prediction.trim() !== '';
-      const status = hasPrediction ? 'เสร็จแล้ว' : 'รอทำนาย';
-
-      let actionHTML;
-      if(hasPrediction){
-        // ถ้ามีคำทำนาย → ไปหน้า prediction2.html
-        actionHTML = `<button class="green" onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button>`;
-      } else {
-        // ถ้ายังไม่มี → แก้ไขคำถาม
-        let actionHTML = `<button class="green" onclick="editQuestion('${doc.id}')">แก้ไขคำถาม</button>`;
-
-      }
+      const hasPrediction = data.prediction && data.prediction.trim()!=='';
+      const status = hasPrediction ? 'ทำนายแล้ว' : 'รอทำนาย';
+      const btnClass = hasPrediction ? 'green' : 'gray';
+      const btnDisabled = hasPrediction ? '' : 'onclick="editQuestion(\''+doc.id+'\')"' ;
 
       const tr = document.createElement('tr');
       tr.innerHTML=`
         <td>${idx}</td>
+        <td>${data.question}</td>
         <td>${date}</td>
         <td>${status}</td>
-        <td>${actionHTML}</td>
+        <td><button class="${btnClass}" ${btnDisabled} ${hasPrediction ? 'onclick="goPrediction2(\''+doc.id+'\')"' : ''}>${hasPrediction?'ดูคำทำนาย':'แก้ไขคำถาม'}</button></td>
       `;
       tbody.appendChild(tr);
       idx++;
     });
-
-  } catch(err){
-    tbody.innerHTML=`<tr><td colspan="4">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+  }catch(err){
+    tbody.innerHTML=`<tr><td colspan="5">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
   }
 }
 
-function editQuestion(questionId){
-  window.location.href = `prediction2.html?questionId=${questionId}`;
+function editQuestion(docId){
+  const newQ = prompt("แก้ไขคำถาม:");
+  if(newQ){
+    db.collection('users').doc(currentUser.uid)
+      .collection('questions').doc(docId).update({question:newQ})
+      .then(()=>loadQuestions());
+  }
 }
 
-
-function viewPrediction(questionId){
-  window.location.href = `prediction2.html?questionId=${questionId}`;
+function goPrediction2(docId){
+  window.location.href = `prediction2.html?questionId=${docId}`;
 }
 </script>
 </body>
