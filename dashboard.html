@@ -1,177 +1,146 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Horowednesday Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa', cursive; }
-    body { background: linear-gradient(135deg,#c3bef0,#b4e0ff); padding:10px; }
-    .container { background:#fff; border-radius:20px; padding:20px; max-width:400px; margin:0 auto; box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-    header img { width:80px; height:80px; border-radius:50%; margin:auto; display:block; }
-    header h1 { text-align:center; color:#5d4fa2; margin:10px 0; font-size:1.5rem; }
-    h2 { color:#5d4fa2; margin:10px 0; }
-    textarea { width:100%; padding:10px; margin:5px 0; border-radius:10px; border:1px solid #ccc; resize:none;}
-    button { width:100%; padding:12px; margin:10px 0; border:none; border-radius:12px; background: linear-gradient(135deg,#9d8de3,#7ec4ff); color:#fff; font-size:1rem; cursor:pointer; transition:0.3s;}
-    button:hover { transform: scale(1.05);}
-    #card-selection { display:flex; flex-wrap:wrap; justify-content:space-between; margin-top:10px; }
-    #card-selection img { width:30%; margin-bottom:8px; border-radius:10px; cursor:pointer; border:2px solid transparent; }
-    #card-selection img.selected { border-color:#7e5de8; }
-    .question-list { margin-top:20px; }
-    .question-item { background:#f0f0ff; border-radius:10px; padding:10px; margin-bottom:10px; }
-    .question-item h3 { font-size:1rem; color:#5d4fa2; margin-bottom:5px; }
-    .total { margin-top:10px; font-weight:bold; color:#5d4fa2; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horowednesday Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Baloo 2', cursive;}
+body{background:linear-gradient(135deg,#c3bef0,#b4e0ff);padding:10px;}
+.container{max-width:700px;margin:0 auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;}
+header img{width:50px;height:50px;border-radius:50%;}
+header h1{color:#5d4fa2;font-size:1.5rem;}
+header button{padding:8px 12px;border:none;border-radius:10px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
+header button:hover{transform:scale(1.05);}
+#add-btn{background:#7ec4ff;margin-left:10px;}
+form{margin-bottom:15px;}
+input,textarea{width:100%;padding:10px;margin:5px 0;border-radius:10px;border:1px solid #ccc;font-size:1rem;}
+button.submit-btn{background:#9d8de3;width:auto;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #ccc;padding:8px;text-align:center;border-radius:8px;}
+th{background:#d7cfff;color:#5d4fa2;}
+td button{padding:5px 10px;border:none;border-radius:8px;color:#fff;cursor:pointer;transition:0.3s;}
+td button.green{background:#4caf50;}
+td button.gray{background:#aaa;cursor:not-allowed;}
+</style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <img src="wednesdaylogo.png" alt="Horowednesday Logo">
-      <h1>Horowednesday</h1>
-    </header>
-
-    <h2>ตั้งคำถามใหม่</h2>
-    <textarea id="question-input" rows="2" placeholder="พิมพ์คำถามของคุณ..."></textarea>
-
-    <h2>เลือกไพ่ 3 ใบ</h2>
-    <div id="card-selection"></div>
-
-    <button onclick="addQuestion()">เพิ่มคำถาม</button>
-
-    <div class="total" id="total-amount">ยอดรวม: 0 บาท</div>
-
-    <h2>คำถามของฉัน</h2>
-    <div class="question-list" id="question-list"></div>
-
-    <button onclick="goToPayment()">จ่ายเงิน</button>
+<div class="container">
+<header>
+  <img src="https://raw.githubusercontent.com/username/repo/main/assets/images/wednesdaylogo.png" alt="Logo">
+  <h1>Dashboard</h1>
+  <div>
+    <button onclick="logout()">Log out</button>
+    <button id="add-btn" onclick="toggleForm()">เพิ่มคำถาม</button>
   </div>
+</header>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<form id="question-form" style="display:none;">
+  <textarea id="new-question" placeholder="พิมพ์คำถามของคุณ" rows="3"></textarea>
+  <button type="button" class="submit-btn" onclick="addQuestion()">บันทึกคำถาม</button>
+</form>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
-      authDomain: "horowednesday.firebaseapp.com",
-      projectId: "horowednesday",
-      storageBucket: "horowednesday.firebasestorage.app",
-      messagingSenderId: "604956033127",
-      appId: "1:604956033127:web:fec565a41020ccf28814c2",
-      measurementId: "G-B38JLFJPVS"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+<table>
+  <thead>
+    <tr>
+      <th>ลำดับ</th>
+      <th>คำถาม</th>
+      <th>วันที่สร้าง</th>
+      <th>สถานะ</th>
+    </tr>
+  </thead>
+  <tbody id="question-list">
+    <tr><td colspan="4">กำลังโหลดข้อมูล...</td></tr>
+  </tbody>
+</table>
+</div>
 
-    let currentUser;
-    let questions = [];
-    let selectedCards = [];
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    const cardContainer = document.getElementById('card-selection');
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+  authDomain: "horowednesday.firebaseapp.com",
+  projectId: "horowednesday",
+  storageBucket: "horowednesday.firebasestorage.app",
+  messagingSenderId: "604956033127",
+  appId: "1:604956033127:web:fec565a41020ccf28814c2",
+  measurementId: "G-B38JLFJPVS"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-    auth.onAuthStateChanged(user=>{
-      if(user) currentUser=user;
-      else window.location.href="index.html";
-      loadCards();
+let currentUser;
+
+auth.onAuthStateChanged(user=>{
+  if(user){
+    currentUser=user;
+    loadQuestions();
+  } else {
+    window.location.href="index.html";
+  }
+});
+
+function logout(){ auth.signOut().then(()=>window.location.href="index.html"); }
+
+function toggleForm(){
+  const form = document.getElementById('question-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+// โหลดคำถามของผู้ใช้
+async function loadQuestions(){
+  const tbody = document.getElementById('question-list');
+  tbody.innerHTML='<tr><td colspan="4">กำลังโหลดข้อมูล...</td></tr>';
+  try{
+    const snapshot = await db.collection('users').doc(currentUser.uid)
+      .collection('questions').orderBy('timestamp','desc').get();
+    if(snapshot.empty){
+      tbody.innerHTML='<tr><td colspan="4">ยังไม่มีคำถาม</td></tr>';
+      return;
+    }
+    tbody.innerHTML='';
+    let idx=1;
+    snapshot.forEach(doc=>{
+      const data = doc.data();
+      const date = data.timestamp?.toDate().toLocaleString() || '-';
+      const status = data.prediction && data.prediction.trim()!=='' ? 'ทำนายแล้ว' : 'รอทำนาย';
+      const tr = document.createElement('tr');
+      tr.innerHTML=`
+        <td>${idx}</td>
+        <td>${data.question}</td>
+        <td>${date}</td>
+        <td>${status}</td>
+      `;
+      tbody.appendChild(tr);
+      idx++;
     });
-
-    const tarotNames = [
-      "Ace of Cups","Two of Cups","Three of Cups","Four of Cups","Five of Cups",
-      "Six of Cups","Seven of Cups","Eight of Cups","Nine of Cups","Ten of Cups",
-      "Page of Cups","Knight of Cups","Queen of Cups","King of Cups",
-      "Ace of Pentacles","Two of Pentacles","Three of Pentacles","Four of Pentacles",
-      "Five of Pentacles","Six of Pentacles","Seven of Pentacles","Eight of Pentacles",
-      "Nine of Pentacles","Ten of Pentacles","Page of Pentacles","Knight of Pentacles",
-      "Queen of Pentacles","King of Pentacles",
-      "Ace of Swords","Two of Swords","Three of Swords","Four of Swords","Five of Swords",
-      "Six of Swords","Seven of Swords","Eight of Swords","Nine of Swords","Ten of Swords",
-      "Page of Swords","Knight of Swords","Queen of Swords","King of Swords",
-      "Ace of Wands","Two of Wands","Three of Wands","Four of Wands","Five of Wands",
-      "Six of Wands","Seven of Wands","Eight of Wands","Nine of Wands","Ten of Wands",
-      "Page of Wands","Knight of Wands","Queen of Wands","King of Wands"
-    ];
-
-    function loadCards(){
-      tarotNames.forEach(name=>{
-        const img=document.createElement('img');
-        img.src='tarotcard.png';
-        img.alt=name;
-        img.title=name;
-        img.onclick = ()=>{
-          if(img.classList.contains('selected')){
-            img.classList.remove('selected');
-            selectedCards = selectedCards.filter(c=>c!==name);
-          } else if(selectedCards.length<3){
-            img.classList.add('selected');
-            selectedCards.push(name);
-          } else {
-            alert("เลือกได้แค่ 3 ใบต่อคำถาม");
-          }
-        }
-        cardContainer.appendChild(img);
-      });
-    }
-
-    function addQuestion(){
-      const q=document.getElementById('question-input').value.trim();
-      if(!q){ alert("กรุณากรอกคำถาม"); return; }
-      if(selectedCards.length!==3){ alert("เลือกไพ่ 3 ใบด้วย"); return; }
-      questions.push({question:q, cards:[...selectedCards]});
-      selectedCards=[];
-      document.getElementById('question-input').value='';
-      document.querySelectorAll('#card-selection img').forEach(img=>img.classList.remove('selected'));
-      renderQuestions();
-    }
-
-    function renderQuestions(){
-  const list = document.getElementById('question-list');
-  list.innerHTML = '';
-
-  questions.forEach((q, i)=>{
-    const div = document.createElement('div');
-    div.className = 'question-item';
-    div.innerHTML = `
-      <h3>คำถาม ${i+1}</h3>
-      <p>${q.question}</p>
-      <p>ไพ่: ${q.cards.join(", ")}</p>
-    `;
-    list.appendChild(div);
-  });
-
-  // แสดงยอดรวมในหน้า dashboard
-  document.getElementById('total-amount').innerText = `ยอดชำระ: ${questions.length*19} บาท`;
-}
-
-async function goToPayment(){
-  if(questions.length === 0){ 
-    alert("คุณยังไม่มีคำถาม"); 
-    return; 
-  }
-
-  const userRef = db.collection('users').doc(currentUser.uid).collection('questions');
-
-  try {
-    // เพิ่มคำถามทีละตัว
-    for(const q of questions){
-      await userRef.add({
-        ...q,
-        amount: 19,
-        status: 'pending',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-
-    // ส่งไป payment.html พร้อมยอดรวมเป็น query string
-    const total = questions.length * 19;
-    window.location.href = `payment.html?total=${total}`;
-
   } catch(err){
-    alert("เกิดข้อผิดพลาด: " + err.message);
+    tbody.innerHTML=`<tr><td colspan="4">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
   }
 }
 
-  </script>
+// เพิ่มคำถามใหม่
+function addQuestion(){
+  const text = document.getElementById('new-question').value.trim();
+  if(!text){ alert("กรุณาพิมพ์คำถาม"); return; }
+
+  const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+  db.collection('users').doc(currentUser.uid)
+    .collection('questions').add({question:text, timestamp:timestamp, prediction:'', status:'pending'})
+    .then(()=>{
+      document.getElementById('new-question').value='';
+      toggleForm();
+      loadQuestions();
+      window.location.href="prediction.html";
+    })
+    .catch(err=>alert("เกิดข้อผิดพลาด: "+err.message));
+}
+</script>
 </body>
 </html>
