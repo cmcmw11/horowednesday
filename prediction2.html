@@ -7,77 +7,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing:border-box; font-family:'Baloo 2', cursive; }
-  body {
-    background:linear-gradient(135deg,#c3bef0,#b4e0ff);
-    padding:20px;
-  }
-  .container {
-    background:white;
-    border-radius:20px;
-    padding:25px;
-    max-width:700px;
-    margin:auto;
-    box-shadow:0 10px 25px rgba(0,0,0,0.1);
-  }
-  h1 {
-    text-align:center;
-    color:#5d4fa2;
-    margin-bottom:15px;
-  }
-  .user-info {
-    background:#f3f0ff;
-    padding:15px;
-    border-radius:12px;
-    margin-bottom:20px;
-  }
-  .user-info p {
-    color:#5d4fa2;
-    margin:3px 0;
-  }
-  table {
-    width:100%;
-    border-collapse:collapse;
-  }
-  th, td {
-    padding:10px;
-    border:1px solid #ddd;
-    text-align:center;
-  }
-  th {
-    background:#d7cfff;
-    color:#5d4fa2;
-  }
-  textarea {
-    width:100%;
-    border-radius:10px;
-    border:1px solid #ccc;
-    padding:10px;
-    resize:none;
-  }
-  button {
-    padding:10px 15px;
-    border:none;
-    border-radius:10px;
-    margin-top:10px;
-    cursor:pointer;
-    background:linear-gradient(135deg,#9d8de3,#7ec4ff);
-    color:#fff;
-    font-weight:bold;
-    transition:0.3s;
-  }
-  button:hover {
-    transform:scale(1.05);
-  }
-  .cards img {
-    width:80px;
-    height:120px;
-    margin:5px;
-    border-radius:10px;
-  }
-  .back-btn {
-    background:#ccc;
-    color:#333;
-  }
+  body { background:linear-gradient(135deg,#c3bef0,#b4e0ff); padding:20px; }
+  .container { background:white; border-radius:20px; padding:25px; max-width:700px; margin:auto; box-shadow:0 10px 25px rgba(0,0,0,0.1); }
+  h1 { text-align:center; color:#5d4fa2; margin-bottom:15px; }
+  .user-info { background:#f3f0ff; padding:15px; border-radius:12px; margin-bottom:20px; }
+  .user-info p { color:#5d4fa2; margin:3px 0; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:10px; border:1px solid #ddd; text-align:center; }
+  th { background:#d7cfff; color:#5d4fa2; }
+  textarea { width:100%; border-radius:10px; border:1px solid #ccc; padding:10px; resize:none; }
+  button { padding:10px 15px; border:none; border-radius:10px; margin-top:10px; cursor:pointer; background:linear-gradient(135deg,#9d8de3,#7ec4ff); color:#fff; font-weight:bold; transition:0.3s; }
+  button:hover { transform:scale(1.05); }
+  .back-btn { background:#ccc; color:#333; }
 </style>
 </head>
 <body>
@@ -123,7 +64,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // ---------- Firebase Config ----------
   const firebaseConfig = {
     apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
     authDomain: "horowednesday.firebaseapp.com",
@@ -140,7 +80,6 @@
   let currentUser;
   let currentQuestionId = null;
 
-  // ---------- Helper: อ่าน query param ----------
   function getQueryParam(param) {
     return new URLSearchParams(window.location.search).get(param);
   }
@@ -151,15 +90,12 @@
       currentQuestionId = getQueryParam("qid");
       await loadUserInfo();
       if (currentQuestionId) loadPredictionDetail(currentQuestionId);
-      else {
-        document.getElementById('prediction-data').innerHTML = `<tr><td colspan="6">❌ ไม่พบคำถามนี้</td></tr>`;
-      }
+      else document.getElementById('prediction-data').innerHTML = `<tr><td colspan="6">❌ ไม่พบคำถามนี้</td></tr>`;
     } else {
       window.location.href = "index.html";
     }
   });
 
-  // ---------- โหลดข้อมูลส่วนตัวผู้ใช้ ----------
   async function loadUserInfo() {
     const doc = await db.collection("users").doc(currentUser.uid).get();
     if (doc.exists) {
@@ -172,12 +108,10 @@
     }
   }
 
-  // ---------- โหลดรายละเอียดคำถาม ----------
   async function loadPredictionDetail(qid) {
     try {
       const ref = db.collection("users").doc(currentUser.uid).collection("questions").doc(qid);
       const doc = await ref.get();
-
       if (!doc.exists) {
         document.getElementById('prediction-data').innerHTML = `<tr><td colspan="6">❌ ไม่พบคำถามนี้</td></tr>`;
         return;
@@ -188,7 +122,7 @@
       const status = d.status || "-";
       const question = d.question || "-";
       const prediction = d.prediction || "ยังไม่มีคำทำนาย";
-      const cards = (d.cards || []).map(c => `<img src="https://raw.githubusercontent.com/username/repo/main/assets/images/tarot/${c.replace(/ /g,'_')}.png" title="${c}">`).join("");
+      const cards = (d.cards || []).join(", "); // แสดงเฉพาะชื่อไพ่
 
       const html = `
         <tr>
@@ -197,32 +131,27 @@
           <td>${status}</td>
           <td>${question}</td>
           <td>${prediction}</td>
-          <td class="cards">${cards}</td>
+          <td>${cards}</td>
         </tr>
       `;
       document.getElementById('prediction-data').innerHTML = html;
 
-      // ถ้ายังไม่มีคำทำนาย => เปิดให้แก้ไขคำถาม
       if (!d.prediction) {
         document.getElementById("edit-section").style.display = "block";
         document.getElementById("edit-question").value = d.question || "";
       }
-
     } catch (err) {
       document.getElementById('prediction-data').innerHTML = `<tr><td colspan="6">⚠️ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
     }
   }
 
-  // ---------- แก้ไขคำถาม ----------
   async function saveEdit() {
     const newQ = document.getElementById("edit-question").value.trim();
     if (!newQ) return alert("กรุณากรอกคำถามใหม่");
-
     try {
       await db.collection("users").doc(currentUser.uid)
         .collection("questions").doc(currentQuestionId)
         .update({ question: newQ, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-
       alert("แก้ไขคำถามเรียบร้อย!");
       loadPredictionDetail(currentQuestionId);
     } catch (err) {
