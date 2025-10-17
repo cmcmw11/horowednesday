@@ -1,121 +1,179 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>คำทำนาย</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Baloo 2', cursive;}
-body{background:linear-gradient(135deg,#c3bef0,#b4e0ff);padding:10px;}
-.container{max-width:700px;margin:0 auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;}
-header img{width:50px;height:50px;border-radius:50%;}
-header h1{color:#5d4fa2;font-size:1.5rem;}
-header button{padding:8px 12px;border:none;border-radius:10px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
-header button:hover{transform:scale(1.05);}
-table{width:100%;border-collapse:collapse;margin-top:15px;}
-th,td{border:1px solid #ccc;padding:8px;text-align:left;border-radius:8px;}
-th{background:#d7cfff;color:#5d4fa2;width:30%;}
-.cards img{width:50px;height:75px;margin-right:5px;border-radius:6px;}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horowednesday - ดูคำทำนาย</title>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Comfortaa', cursive;
+      background: linear-gradient(135deg,#c9d6ff,#e2e2e2);
+      margin:0; padding:0;
+    }
+    .container {
+      max-width:900px;
+      margin:30px auto;
+      background:#fff;
+      padding:30px;
+      border-radius:20px;
+      box-shadow:0 10px 25px rgba(0,0,0,0.1);
+    }
+    h1 { text-align:center; color:#5d4fa2; }
+    h2 { color:#5d4fa2; margin-top:20px; }
+    .user-info, .question-section {
+      background:#f9f8ff;
+      border-radius:15px;
+      padding:15px;
+      margin-top:10px;
+    }
+    .user-info p, .question-section p {
+      margin:5px 0;
+      color:#5d4fa2;
+    }
+    textarea {
+      width:100%;
+      border-radius:10px;
+      border:1px solid #ccc;
+      padding:10px;
+      margin-top:10px;
+      font-size:1rem;
+    }
+    button {
+      background:linear-gradient(135deg,#9d8de3,#7ec4ff);
+      color:white;
+      border:none;
+      padding:10px 20px;
+      border-radius:10px;
+      cursor:pointer;
+      margin-top:15px;
+      transition:0.3s;
+    }
+    button:hover { transform:scale(1.05); }
+    .back-btn { background:#ccc; color:#333; margin-right:10px; }
+  </style>
 </head>
 <body>
-<div class="container">
-<header>
-  <img src="https://raw.githubusercontent.com/username/repo/main/assets/images/wednesdaylogo.png" alt="Logo">
-  <h1>คำทำนาย</h1>
-  <button onclick="goBack()">กลับ</button>
-</header>
+  <div class="container">
+    <h1>รายละเอียดคำทำนาย</h1>
+    <button class="back-btn" onclick="goBack()">⬅ กลับ</button>
 
-<table>
-  <tr>
-    <th>คำถาม</th>
-    <td id="question"></td>
-  </tr>
-  <tr>
-    <th>วันที่สร้าง</th>
-    <td id="date"></td>
-  </tr>
-  <tr>
-    <th>ราคา</th>
-    <td id="price"></td>
-  </tr>
-  <tr>
-    <th>ไพ่ที่เลือก</th>
-    <td class="cards" id="cards"></td>
-  </tr>
-  <tr>
-    <th>คำทำนาย</th>
-    <td id="prediction"></td>
-  </tr>
-</table>
-</div>
+    <h2>ข้อมูลส่วนตัวลูกค้า</h2>
+    <div class="user-info" id="user-info">
+      <p>ชื่อ: -</p>
+      <p>วันเกิด: -</p>
+      <p>เพศ: -</p>
+      <p>อาชีพ: -</p>
+      <p>สถานะความสัมพันธ์: -</p>
+    </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <h2>รายละเอียดคำถาม</h2>
+    <div class="question-section" id="question-section">
+      <p><strong>วันที่:</strong> <span id="q-date">-</span></p>
+      <p><strong>สถานะ:</strong> <span id="q-status">-</span></p>
+      <p><strong>คำถาม:</strong></p>
+      <textarea id="q-text" readonly></textarea>
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
-  authDomain: "horowednesday.firebaseapp.com",
-  projectId: "horowednesday",
-  storageBucket: "horowednesday.firebasestorage.app",
-  messagingSenderId: "604956033127",
-  appId: "1:604956033127:web:fec565a41020ccf28814c2",
-  measurementId: "G-B38JLFJPVS"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+      <div id="answer-block">
+        <p><strong>คำตอบ:</strong></p>
+        <textarea id="q-answer" readonly></textarea>
+      </div>
 
-let currentUser;
-let questionId = new URLSearchParams(window.location.search).get('questionId');
+      <div id="edit-section" style="display:none;">
+        <button onclick="enableEdit()">✏️ แก้ไขคำถาม</button>
+        <button onclick="saveEdit()" style="display:none;" id="save-btn">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
 
-auth.onAuthStateChanged(user=>{
-  if(user){
-    currentUser=user;
-    loadQuestion();
-  } else {
-    window.location.href="index.html";
-  }
-});
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-function goBack(){ window.location.href="prediction.html"; }
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+      authDomain: "horowednesday.firebaseapp.com",
+      projectId: "horowednesday",
+      storageBucket: "horowednesday.firebasestorage.app",
+      messagingSenderId: "604956033127",
+      appId: "1:604956033127:web:fec565a41020ccf28814c2",
+      measurementId: "G-B38JLFJPVS"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-async function loadQuestion(){
-  try{
-    const docRef = db.collection('users').doc(currentUser.uid)
-      .collection('questions').doc(questionId);
-    const doc = await docRef.get();
+    // รับ uid และ qid จาก URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const uid = urlParams.get("uid");
+    const qid = urlParams.get("qid");
 
-    if(!doc.exists){
-      alert("ไม่พบคำถามนี้");
-      return;
-    }
+    let currentUser, questionRef;
 
-    const data = doc.data();
-    document.getElementById('question').innerText = data.question || '-';
-    const date = data.timestamp?.toDate().toLocaleString() || '-';
-    document.getElementById('date').innerText = date;
-    document.getElementById('price').innerText = data.amount ? data.amount + ' บาท' : '-';
-    document.getElementById('prediction').innerText = data.prediction || 'ยังไม่มีคำทำนาย';
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentUser = user;
+      loadUserInfo();
+      loadQuestion();
+    });
 
-    const cardsDiv = document.getElementById('cards');
-    cardsDiv.innerHTML = '';
-    if(data.cards){
-      data.cards.forEach(c=>{
-        const img = document.createElement('img');
-        img.src = `https://raw.githubusercontent.com/username/repo/main/assets/images/tarot/${c.replace(/ /g,'_')}.png`;
-        img.title = c;
-        cardsDiv.appendChild(img);
+    // โหลดข้อมูลส่วนตัวลูกค้า
+    function loadUserInfo() {
+      db.collection("users").doc(uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("user-info").innerHTML = `
+            <p>ชื่อ: ${data.name || "-"}</p>
+            <p>วันเกิด: ${data.birth || "-"}</p>
+            <p>เพศ: ${data.gender || "-"}</p>
+            <p>อาชีพ: ${data.job || "-"}</p>
+            <p>สถานะความสัมพันธ์: ${data.relationship || "-"}</p>
+          `;
+        }
       });
     }
-  }catch(err){
-    alert("เกิดข้อผิดพลาด: " + err.message);
-  }
-}
-</script>
+
+    // โหลดคำถาม/คำตอบ
+    async function loadQuestion() {
+      questionRef = db.collection("users").doc(uid).collection("questions").doc(qid);
+      const doc = await questionRef.get();
+      if (!doc.exists) return alert("ไม่พบคำถามนี้");
+
+      const data = doc.data();
+      document.getElementById("q-date").innerText = data.timestamp ? data.timestamp.toDate().toLocaleString("th-TH") : "-";
+      document.getElementById("q-status").innerText = data.status || "-";
+      document.getElementById("q-text").value = data.question || "-";
+      document.getElementById("q-answer").value = data.answer || "-";
+
+      // ลูกค้าของตัวเองเท่านั้นถึงจะแก้ได้
+      if (currentUser.uid === uid && (!data.answer || data.answer.trim() === "")) {
+        document.getElementById("edit-section").style.display = "block";
+      }
+    }
+
+    function enableEdit() {
+      const qText = document.getElementById("q-text");
+      qText.removeAttribute("readonly");
+      document.getElementById("save-btn").style.display = "inline-block";
+    }
+
+    async function saveEdit() {
+      const newQuestion = document.getElementById("q-text").value.trim();
+      if (!newQuestion) return alert("กรุณากรอกคำถาม");
+
+      await questionRef.update({ question: newQuestion });
+      alert("บันทึกคำถามใหม่เรียบร้อย!");
+      document.getElementById("q-text").setAttribute("readonly", true);
+      document.getElementById("save-btn").style.display = "none";
+    }
+
+    function goBack() {
+      window.location.href = "prediction.html";
+    }
+  </script>
 </body>
 </html>
