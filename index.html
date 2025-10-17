@@ -139,25 +139,25 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    // เปลี่ยนหน้าระหว่าง login / register
     function showRegister() {
       document.getElementById('login-section').style.display = 'none';
       document.getElementById('register-section').style.display = 'block';
     }
-
     function showLogin() {
       document.getElementById('register-section').style.display = 'none';
       document.getElementById('login-section').style.display = 'block';
     }
 
     // ✅ สมัครสมาชิก
-    function registerUser() {
-      const name = document.getElementById('reg-name').value;
-      const birthday = document.getElementById('reg-birthday').value;
-      const gender = document.getElementById('reg-gender').value;
-      const relationship = document.getElementById('reg-relationship').value;
-      const job = document.getElementById('reg-job').value;
+    async function registerUser() {
+      const name = document.getElementById('reg-name').value.trim();
+      const birthday = document.getElementById('reg-birthday').value.trim();
+      const gender = document.getElementById('reg-gender').value.trim();
+      const relationship = document.getElementById('reg-relationship').value.trim();
+      const job = document.getElementById('reg-job').value.trim();
       const username = document.getElementById('reg-username').value.trim();
-      const password = document.getElementById('reg-password').value;
+      const password = document.getElementById('reg-password').value.trim();
 
       if (!username || !password) {
         document.getElementById('register-message').innerText = "กรุณากรอก Account LINE และรหัสผ่าน";
@@ -166,31 +166,31 @@
 
       const email = username + "@horowednesday.com";
 
-      auth.createUserWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
-          return db.collection('users').doc(user.uid).set({
-            name, birthday, gender, relationship, job, username, status: 'active'
-          });
-        })
-        .then(() => {
-          document.getElementById('register-message').innerText = "สมัครสมาชิกสำเร็จ! กำลังเข้าสู่ระบบ...";
-          const email = document.getElementById('reg-username').value.trim() + "@horowednesday.com";
-          const password = document.getElementById('reg-password').value;
-          return auth.signInWithEmailAndPassword(email, password);
-        })
-        .then(() => {
-          window.location.href = "prediction.html";
-        })
-        .catch((error) => {
-          document.getElementById('register-message').innerText = error.message;
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        await db.collection('users').doc(user.uid).set({
+          name: name,
+          birth: birthday,
+          gender: gender,
+          relationship: relationship,
+          job: job,
+          username: username,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+
+        document.getElementById('register-message').innerText = "สมัครสมาชิกสำเร็จ! กำลังเข้าสู่ระบบ...";
+        setTimeout(() => { window.location.href = "prediction.html"; }, 1500);
+      } catch (error) {
+        document.getElementById('register-message').innerText = "เกิดข้อผิดพลาด: " + error.message;
+      }
     }
 
     // ✅ เข้าสู่ระบบ
-    function loginUser() {
+    async function loginUser() {
       const username = document.getElementById('login-username').value.trim();
-      const password = document.getElementById('login-password').value;
+      const password = document.getElementById('login-password').value.trim();
 
       if (!username || !password) {
         document.getElementById('login-message').innerText = "กรุณากรอก Account LINE และรหัสผ่าน";
@@ -199,19 +199,16 @@
 
       const email = username + "@horowednesday.com";
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          document.getElementById('login-message').innerText = "เข้าสู่ระบบสำเร็จ! กำลังไปหน้า prediction...";
-          setTimeout(() => {
-            window.location.href = "prediction.html";
-          }, 1000);
-        })
-        .catch((error) => {
-          document.getElementById('login-message').innerText = "เข้าสู่ระบบไม่สำเร็จ: " + error.message;
-        });
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        document.getElementById('login-message').innerText = "เข้าสู่ระบบสำเร็จ! กำลังไปหน้า prediction...";
+        setTimeout(() => { window.location.href = "prediction.html"; }, 1200);
+      } catch (error) {
+        document.getElementById('login-message').innerText = "เข้าสู่ระบบไม่สำเร็จ: " + error.message;
+      }
     }
 
-    // ✅ ถ้า login อยู่แล้ว ให้เด้งไป prediction.html ทันที
+    // ✅ ถ้า login อยู่แล้ว ให้ไป prediction.html
     auth.onAuthStateChanged((user) => {
       if (user) {
         window.location.href = "prediction.html";
