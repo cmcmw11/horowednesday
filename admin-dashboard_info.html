@@ -3,153 +3,165 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin - รายละเอียดลูกค้า</title>
+<title>Admin - ข้อมูลลูกค้า</title>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  body {
-    font-family: 'Comfortaa', cursive;
-    background: linear-gradient(135deg,#c9d6ff,#e2e2e2);
-    margin:0; padding:20px;
-  }
-  .container {
-    background:#fff;
-    border-radius:20px;
-    padding:20px;
-    max-width:800px;
-    margin:auto;
-    box-shadow:0 10px 25px rgba(0,0,0,0.1);
-  }
-  h1 { text-align:center; color:#5d4fa2; margin-bottom:15px; }
-  .section { background:#f8f6ff; border-radius:15px; padding:15px; margin-bottom:20px; }
-  h2 { color:#5d4fa2; margin-bottom:8px; }
-  p { margin:5px 0; }
-  textarea {
-    width:100%; padding:10px; border-radius:10px; border:1px solid #ccc; resize:none;
-  }
-  button {
-    padding:10px 20px;
-    border:none;
-    border-radius:12px;
-    background:linear-gradient(135deg,#9d8de3,#7ec4ff);
-    color:#fff;
-    font-size:1rem;
-    cursor:pointer;
-    transition:0.3s;
-  }
-  button:hover { transform:scale(1.05); }
-  .back-btn { background:#f77; float:right; }
-  .cards img { width:60px; height:90px; margin-right:8px; border-radius:8px; }
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
+body{background:linear-gradient(135deg,#b4e0ff,#d7c9ff);padding:20px;}
+.container{background:#fff;border-radius:15px;padding:20px;max-width:900px;margin:auto;box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+h1,h2{color:#5d4fa2;margin-bottom:15px;}
+table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+th,td{border:1px solid #ccc;padding:8px;text-align:center;}
+th{background:#9d8de3;color:#fff;}
+button{padding:6px 12px;border:none;border-radius:8px;background:#7ec4ff;color:#fff;cursor:pointer;transition:0.3s;}
+button:hover{opacity:0.9;}
 </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🔮 ข้อมูลลูกค้าและการทำนาย</h1>
-    <button class="back-btn" onclick="history.back()">ย้อนกลับ</button>
+<div class="container">
+<h1>ข้อมูลลูกค้า</h1>
 
-    <div class="section" id="user-info">
-      <h2>ข้อมูลส่วนตัวลูกค้า</h2>
-      <p><strong>ชื่อ:</strong> <span id="name">-</span></p>
-      <p><strong>วันเกิด:</strong> <span id="birth">-</span></p>
-      <p><strong>เพศ:</strong> <span id="gender">-</span></p>
-      <p><strong>อาชีพ:</strong> <span id="job">-</span></p>
-      <p><strong>สถานะความสัมพันธ์:</strong> <span id="relationship">-</span></p>
-    </div>
+<div id="user-info">
+<p><strong>Username:</strong> <span id="username"></span></p>
+<p><strong>Name:</strong> <span id="name"></span></p>
+<p><strong>วันเกิด:</strong> <span id="birth"></span></p>
+<p><strong>เพศ:</strong> <span id="gender"></span></p>
+<p><strong>อาชีพ:</strong> <span id="job"></span></p>
+<p><strong>สถานะความสัมพันธ์:</strong> <span id="relationship"></span></p>
+</div>
 
-    <div class="section" id="question-info">
-      <h2>รายละเอียดคำถาม</h2>
-      <p><strong>คำถาม:</strong> <span id="question">-</span></p>
-      <p><strong>วันที่ชำระ:</strong> <span id="payment-date">-</span></p>
-      <p><strong>สถานะ:</strong> <span id="status">-</span></p>
-      <div class="cards" id="cards"></div>
-    </div>
+<h2>รายการคำถาม</h2>
+<table>
+<thead>
+<tr>
+<th>ลำดับ</th>
+<th>วันที่</th>
+<th>สถานะ</th>
+<th>คำถาม</th>
+<th>คำทำนาย</th>
+<th>แก้ไขคำถาม/คำทำนาย</th>
+</tr>
+</thead>
+<tbody id="question-list">
+<tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>
+</tbody>
+</table>
 
-    <div class="section">
-      <h2>คำทำนาย</h2>
-      <textarea id="prediction-text" rows="5" placeholder="พิมพ์คำทำนายที่นี่..."></textarea>
-      <br><br>
-      <button onclick="savePrediction()">💾 บันทึกคำทำนาย</button>
-    </div>
-  </div>
+<h2>ประวัติชำระเงิน</h2>
+<table>
+<thead>
+<tr>
+<th>วันที่โอน</th>
+<th>ธนาคาร</th>
+<th>ชื่อบัญชี</th>
+<th>จำนวนเงิน</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody id="payment-list">
+<tr><td colspan="5">กำลังโหลดข้อมูล...</td></tr>
+</tbody>
+</table>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
-      authDomain: "horowednesday.firebaseapp.com",
-      projectId: "horowednesday",
-      storageBucket: "horowednesday.firebasestorage.app",
-      messagingSenderId: "604956033127",
-      appId: "1:604956033127:web:fec565a41020ccf28814c2",
-      measurementId: "G-B38JLFJPVS"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+  authDomain: "horowednesday.firebaseapp.com",
+  projectId: "horowednesday",
+  storageBucket: "horowednesday.appspot.com",
+  messagingSenderId: "604956033127",
+  appId: "1:604956033127:web:fec565a41020ccf28814c2",
+  measurementId: "G-B38JLFJPVS"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+const ADMIN_UID = "COSNiC8qzrP6dfWiumqLETrROuu2";
 
-    const params = new URLSearchParams(window.location.search);
-    const uid = params.get("uid");
-    const qid = params.get("qid");
+// ดึง userId จาก URL
+const params = new URLSearchParams(window.location.search);
+const userId = params.get("userId");
 
-    if(!uid || !qid){
-      alert("ไม่พบข้อมูลลูกค้า");
-      history.back();
-    }
+auth.onAuthStateChanged(user=>{
+  if(!user || user.uid!==ADMIN_UID){
+    alert("สิทธิ์ไม่เพียงพอ");
+    window.location.href="admin-login.html";
+  } else {
+    loadUserInfo();
+    loadQuestions();
+    loadPayments();
+  }
+});
 
-    auth.onAuthStateChanged(user=>{
-      if(!user){
-        window.location.href = "admin-login.html";
-        return;
-      }
-      loadUserInfo();
-      loadQuestionInfo();
-    });
+async function loadUserInfo(){
+  const doc = await db.collection("users").doc(userId).get();
+  if(doc.exists){
+    const data = doc.data();
+    document.getElementById("username").innerText = data.username || "-";
+    document.getElementById("name").innerText = data.name || "-";
+    document.getElementById("birth").innerText = data.birth || "-";
+    document.getElementById("gender").innerText = data.gender || "-";
+    document.getElementById("job").innerText = data.job || "-";
+    document.getElementById("relationship").innerText = data.relationship || "-";
+  }
+}
 
-    async function loadUserInfo(){
-      const doc = await db.collection("users").doc(uid).get();
-      if(doc.exists){
-        const data = doc.data();
-        document.getElementById("name").innerText = data.name || "-";
-        document.getElementById("birth").innerText = data.birth || "-";
-        document.getElementById("gender").innerText = data.gender || "-";
-        document.getElementById("job").innerText = data.job || "-";
-        document.getElementById("relationship").innerText = data.relationship || "-";
-      }
-    }
+async function loadQuestions(){
+  const tbody = document.getElementById("question-list");
+  const snap = await db.collection("users").doc(userId).collection("questions").orderBy("timestamp","desc").get();
+  tbody.innerHTML="";
+  let idx=1;
+  snap.forEach(doc=>{
+    const data = doc.data();
+    const date = data.timestamp?.toDate().toLocaleString() || "-";
+    const status = data.prediction && data.prediction.trim()!=="" ? "ทำนายแล้ว" : "รอคำทำนาย";
+    const prediction = data.prediction || "-";
+    const tr = document.createElement("tr");
+    tr.innerHTML=`
+      <td>${idx}</td>
+      <td>${date}</td>
+      <td>${status}</td>
+      <td>${data.question || "-"}</td>
+      <td>${prediction}</td>
+      <td><button onclick="editPrediction('${doc.id}')">แก้ไข</button></td>
+    `;
+    tbody.appendChild(tr);
+    idx++;
+  });
+}
 
-    async function loadQuestionInfo(){
-      const qDoc = await db.collection("users").doc(uid).collection("questions").doc(qid).get();
-      if(!qDoc.exists) return;
-      const q = qDoc.data();
+function editPrediction(questionId){
+  const newQuestion = prompt("แก้ไขคำถาม");
+  const newPrediction = prompt("แก้ไขคำทำนาย");
+  const qRef = db.collection("users").doc(userId).collection("questions").doc(questionId);
+  qRef.update({question:newQuestion, prediction:newPrediction}).then(()=>{
+    alert("แก้ไขเรียบร้อย");
+    loadQuestions();
+  }).catch(err=>alert(err.message));
+}
 
-      document.getElementById("question").innerText = q.question || "-";
-      document.getElementById("status").innerText = q.status === "answered" ? "✅ ทำนายแล้ว" : "⏳ รอทำนาย";
-      document.getElementById("payment-date").innerText = q.timestamp ? q.timestamp.toDate().toLocaleString("th-TH") : "-";
-      document.getElementById("prediction-text").value = q.prediction || "";
-
-      const cardsDiv = document.getElementById("cards");
-      cardsDiv.innerHTML = (q.cards || []).map(c => 
-        `<img src="https://raw.githubusercontent.com/username/repo/main/assets/images/tarot/${c.replace(/ /g,'_')}.png" title="${c}">`
-      ).join('');
-    }
-
-    async function savePrediction(){
-      const text = document.getElementById("prediction-text").value.trim();
-      if(!text){
-        alert("กรุณากรอกคำทำนายก่อนบันทึก");
-        return;
-      }
-
-      await db.collection("users").doc(uid).collection("questions").doc(qid).update({
-        prediction: text,
-        status: "answered"
-      });
-
-      alert("บันทึกคำทำนายเรียบร้อยแล้ว!");
-      window.location.href = "admin-dashboard.html";
-    }
-  </script>
+async function loadPayments(){
+  const tbody = document.getElementById("payment-list");
+  const snap = await db.collection("users").doc(userId).collection("payments").orderBy("datetime","desc").get();
+  tbody.innerHTML="";
+  snap.forEach(doc=>{
+    const data = doc.data();
+    const tr = document.createElement("tr");
+    tr.innerHTML=`
+      <td>${data.datetime || "-"}</td>
+      <td>${data.bankName || "-"}</td>
+      <td>${data.payerName || "-"}</td>
+      <td>${data.amount || "-"}</td>
+      <td>${data.status || "-"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+</script>
 </body>
 </html>
