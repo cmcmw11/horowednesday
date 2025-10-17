@@ -3,52 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horowednesday - สมัคร / เข้าสู่ระบบ</title>
+<title>Horowednesday Login/Sign Up</title>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa',cursive;}
-body{background: linear-gradient(135deg,#c3bef0,#b4e0ff); padding:20px; min-height:100vh; display:flex; align-items:center; justify-content:center;}
-.container{background:#fff; border-radius:20px; padding:30px; width:350px; box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-h1{color:#5d4fa2; margin-bottom:20px; text-align:center;}
-input,select{width:100%; padding:10px; margin:8px 0; border-radius:10px; border:1px solid #ccc;}
-button{width:100%; padding:12px; margin:10px 0; border:none; border-radius:12px; background:linear-gradient(135deg,#9d8de3,#7ec4ff); color:#fff; font-size:1rem; cursor:pointer; transition:0.3s;}
-button:hover{transform:scale(1.05);}
-.toggle-btn{background:#7ec4ff; margin-top:5px;}
-.error{color:red; font-size:0.9rem; margin-bottom:5px;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
+body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff); padding:20px; min-height:100vh; display:flex; justify-content:center; align-items:center;}
+.container{background:#fff; border-radius:15px; padding:30px; width:100%; max-width:400px; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+h1{color:#5d4fa2; text-align:center; margin-bottom:20px;}
+input{width:100%; padding:10px; margin:8px 0; border-radius:8px; border:1px solid #ccc;}
+button{width:100%; padding:12px; border:none; border-radius:12px; background:#7ec4ff; color:#fff; font-size:1rem; cursor:pointer; margin-top:10px; transition:0.3s;}
+button:hover{opacity:0.9;}
+.switch{margin-top:15px; text-align:center; color:#5d4fa2; cursor:pointer; text-decoration:underline;}
+#error-msg{color:red; text-align:center; margin-top:10px;}
 </style>
 </head>
 <body>
-
 <div class="container">
-  <h1>Horowednesday</h1>
+  <h1 id="form-title">เข้าสู่ระบบ</h1>
 
-  <div id="signup-form">
-    <h2>สมัครสมาชิก</h2>
-    <div class="error" id="signup-error"></div>
-    <input type="text" id="signup-name" placeholder="ชื่อ" required>
-    <input type="date" id="signup-birth" placeholder="วันเกิด" required>
-    <select id="signup-gender">
-      <option value="">-- เลือกเพศ --</option>
-      <option value="หญิง">หญิง</option>
-      <option value="ชาย">ชาย</option>
-      <option value="อื่นๆ">อื่นๆ</option>
-    </select>
-    <input type="text" id="signup-job" placeholder="อาชีพ" required>
-    <input type="text" id="signup-relationship" placeholder="สถานะความสัมพันธ์" required>
-    <input type="email" id="signup-email" placeholder="Email" required>
-    <input type="password" id="signup-password" placeholder="รหัสผ่าน" required>
-    <button onclick="signup()">สมัครสมาชิก</button>
-    <button class="toggle-btn" onclick="toggleForms()">ฉันมีบัญชีอยู่แล้ว</button>
-  </div>
-
-  <div id="login-form" style="display:none;">
-    <h2>เข้าสู่ระบบ</h2>
-    <div class="error" id="login-error"></div>
-    <input type="email" id="login-email" placeholder="Email" required>
-    <input type="password" id="login-password" placeholder="รหัสผ่าน" required>
+  <div id="login-form">
+    <input type="email" id="login-email" placeholder="อีเมล">
+    <input type="password" id="login-password" placeholder="รหัสผ่าน">
     <button onclick="login()">เข้าสู่ระบบ</button>
-    <button class="toggle-btn" onclick="toggleForms()">สมัครสมาชิก</button>
   </div>
+
+  <div id="signup-form" style="display:none;">
+    <input type="text" id="signup-username" placeholder="Username">
+    <input type="text" id="signup-name" placeholder="ชื่อจริง">
+    <input type="text" id="signup-birth" placeholder="วันเกิด (DD/MM/YYYY)">
+    <input type="text" id="signup-gender" placeholder="เพศ">
+    <input type="text" id="signup-job" placeholder="อาชีพ">
+    <input type="text" id="signup-relationship" placeholder="สถานะความสัมพันธ์">
+    <input type="email" id="signup-email" placeholder="อีเมล">
+    <input type="password" id="signup-password" placeholder="รหัสผ่าน">
+    <button onclick="signup()">สมัครสมาชิก</button>
+  </div>
+
+  <div class="switch" onclick="toggleForm()">สลับไปยังสมัครสมาชิก/เข้าสู่ระบบ</div>
+  <div id="error-msg"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -69,36 +61,54 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-function toggleForms(){
-  document.getElementById('signup-form').style.display = 
-    document.getElementById('signup-form').style.display === 'none' ? 'block' : 'none';
-  document.getElementById('login-form').style.display = 
-    document.getElementById('login-form').style.display === 'none' ? 'block' : 'none';
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+const formTitle = document.getElementById('form-title');
+const errorMsg = document.getElementById('error-msg');
+
+function toggleForm(){
+  if(loginForm.style.display==='none'){
+    loginForm.style.display='block';
+    signupForm.style.display='none';
+    formTitle.innerText='เข้าสู่ระบบ';
+    errorMsg.innerText='';
+  }else{
+    loginForm.style.display='none';
+    signupForm.style.display='block';
+    formTitle.innerText='สมัครสมาชิก';
+    errorMsg.innerText='';
+  }
 }
 
-// สมัครสมาชิก
+// login function
+function login(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value.trim();
+  if(!email || !password){ errorMsg.innerText='กรุณากรอกอีเมลและรหัสผ่าน'; return; }
+  auth.signInWithEmailAndPassword(email,password)
+    .then(()=>{ window.location.href='prediction.html'; })
+    .catch(err=>{ errorMsg.innerText=err.message; });
+}
+
+// signup function
 function signup(){
-  const name = document.getElementById('signup-name').value.trim();
-  const birth = document.getElementById('signup-birth').value;
-  const gender = document.getElementById('signup-gender').value;
-  const job = document.getElementById('signup-job').value.trim();
-  const relationship = document.getElementById('signup-relationship').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
-  const password = document.getElementById('signup-password').value;
+  const username=document.getElementById('signup-username').value.trim();
+  const name=document.getElementById('signup-name').value.trim();
+  const birth=document.getElementById('signup-birth').value.trim();
+  const gender=document.getElementById('signup-gender').value.trim();
+  const job=document.getElementById('signup-job').value.trim();
+  const relationship=document.getElementById('signup-relationship').value.trim();
+  const email=document.getElementById('signup-email').value.trim();
+  const password=document.getElementById('signup-password').value.trim();
 
-  const errorDiv = document.getElementById('signup-error');
-  errorDiv.innerText = '';
-
-  if(!name || !birth || !gender || !job || !relationship || !email || !password){
-    errorDiv.innerText = "กรุณากรอกข้อมูลให้ครบ";
-    return;
+  if(!username || !name || !birth || !gender || !job || !relationship || !email || !password){
+    errorMsg.innerText='กรุณากรอกข้อมูลให้ครบทุกช่อง'; return;
   }
 
   auth.createUserWithEmailAndPassword(email,password)
     .then(cred=>{
-      // บันทึกข้อมูลส่วนตัวไป Firestore
       return db.collection('users').doc(cred.user.uid).set({
-        username: email.split('@')[0],
+        username,
         name,
         birth,
         gender,
@@ -108,38 +118,19 @@ function signup(){
       });
     })
     .then(()=>{
-      alert("สมัครเรียบร้อย! เข้าสู่ระบบอัตโนมัติ");
-      window.location.href = "prediction.html";
+      window.location.href='prediction.html';
     })
-    .catch(err=>{
-      errorDiv.innerText = err.message;
-    });
+    .catch(err=>{ errorMsg.innerText=err.message; });
 }
 
-// เข้าสู่ระบบ
-function login(){
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  const errorDiv = document.getElementById('login-error');
-  errorDiv.innerText = '';
-
-  if(!email || !password){
-    errorDiv.innerText = "กรุณากรอกข้อมูลให้ครบ";
-    return;
-  }
-
-  auth.signInWithEmailAndPassword(email,password)
-    .then(()=>{
-      window.location.href = "prediction.html";
-    })
-    .catch(err=>{
-      errorDiv.innerText = err.message;
-    });
-}
-
-// ถ้า user เข้าสู่ระบบแล้ว รีไดเร็คไป prediction.html
-auth.onAuthStateChanged(user=>{
-  if(user) window.location.href="prediction.html";
+// ป้องกันรีโหลดวน
+window.addEventListener('load',()=>{
+  const path = window.location.pathname.split("/").pop();
+  auth.onAuthStateChanged(user=>{
+    if(user && path==='index.html'){
+      window.location.href='prediction.html';
+    }
+  });
 });
 </script>
 </body>
