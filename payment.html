@@ -1,26 +1,131 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horowednesday Payment</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa', cursive; }
+body { background: linear-gradient(135deg,#c3bef0,#b4e0ff); padding:10px; }
+.container { background:#fff; border-radius:20px; padding:20px; max-width:400px; margin:0 auto; box-shadow:0 10px 25px rgba(0,0,0,0.1);}
+header img { width:80px; height:80px; border-radius:50%; margin:auto; display:block; }
+header h1 { text-align:center; color:#5d4fa2; margin:10px 0; font-size:1.5rem; }
+h2 { color:#5d4fa2; margin:15px 0 5px 0; }
+p { margin:5px 0; color:#5d4fa2; font-weight:bold; }
+input, select { width:100%; padding:10px; margin:5px 0; border-radius:10px; border:1px solid #ccc; }
+button { width:100%; padding:12px; margin:10px 0; border:none; border-radius:12px; background: linear-gradient(135deg,#9d8de3,#7ec4ff); color:#fff; font-size:1rem; cursor:pointer; transition:0.3s;}
+button:hover { transform: scale(1.05); }
+.copy-btn { margin-top:5px; background:#7ec4ff; color:#fff; font-size:0.9rem; }
+#bank-other { display:none; margin-top:5px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <img src="https://raw.githubusercontent.com/username/repo/main/assets/images/wednesdaylogo.png" alt="Horowednesday Logo">
+    <h1>แจ้งชำระเงิน</h1>
+  </header>
+
+  <h2>โอนเงินไปยังบัญชี</h2>
+  <p>ธนาคาร: กรุงไทย</p>
+  <p>ชื่อบัญชี: วนิดา</p>
+  <p>เลขบัญชี: <span id="account-number">6619838928</span></p>
+  <button class="copy-btn" onclick="copyAccount()">คัดลอกเลขบัญชี</button>
+
+  <h2>ยอดรวม</h2>
+  <p id="total-amount">0 บาท</p>
+
+  <h2>ข้อมูลการโอน</h2>
+  <input type="text" id="payer-name" placeholder="ชื่อบัญชีผู้โอน">
+
+  <select id="bank-select" onchange="checkOtherBank()">
+    <option value="">-- เลือกธนาคาร --</option>
+    <option value="กสิกร">กสิกร</option>
+    <option value="กรุงไทย">กรุงไทย</option>
+    <option value="กรุงเทพ">กรุงเทพ</option>
+    <option value="ไทยพาณิชย์">ไทยพาณิชย์</option>
+    <option value="อื่นๆ">อื่นๆ</option>
+  </select>
+
+  <input type="text" id="bank-other" placeholder="ระบุธนาคาร">
+
+  <input type="datetime-local" id="transfer-datetime">
+
+  <button onclick="submitPayment()">ส่งข้อมูลชำระเงิน</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+  authDomain: "horowednesday.firebaseapp.com",
+  projectId: "horowednesday",
+  storageBucket: "horowednesday.firebasestorage.app",
+  messagingSenderId: "604956033127",
+  appId: "1:604956033127:web:fec565a41020ccf28814c2",
+  measurementId: "G-B38JLFJPVS"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser;
+
+auth.onAuthStateChanged(user=>{
+  if(user) currentUser=user;
+  else window.location.href="index.html";
+
+  // ดึงยอดรวมจาก query string
+  const total = getQueryParam('total');
+  if(total){
+    document.getElementById('total-amount').innerText = `${total} บาท`;
+  }
+});
+
+function copyAccount(){
+  const accountNum = document.getElementById('account-number').innerText;
+  navigator.clipboard.writeText(accountNum).then(()=>{ alert("คัดลอกเลขบัญชีเรียบร้อย!"); });
+}
+
+function checkOtherBank(){
+  const select = document.getElementById('bank-select');
+  const other = document.getElementById('bank-other');
+  other.style.display = select.value === "อื่นๆ" ? "block" : "none";
+}
+
+function getQueryParam(param){
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(param);
+}
+
 function submitPayment(){
   const payerName = document.getElementById('payer-name').value.trim();
   let bankName = document.getElementById('bank-select').value;
   const bankOther = document.getElementById('bank-other').value.trim();
   const datetime = document.getElementById('transfer-datetime').value;
+  const total = parseInt(getQueryParam('total')||0);
 
   if(bankName==="อื่นๆ"){ if(!bankOther){ alert("กรุณาระบุธนาคาร"); return; } bankName=bankOther; }
   if(!payerName || !bankName || !datetime){ alert("กรุณากรอกข้อมูลให้ครบ"); return; }
+  if(!total){ alert("ไม่พบยอดชำระ กรุณากลับไปหน้าหลัก"); return; }
 
+  // เปลี่ยน status ของ questions เป็น paid
   const userQuestionsRef = db.collection('users').doc(currentUser.uid).collection('questions');
-
   userQuestionsRef.where('status','==','pending').get().then(snapshot=>{
-    const batch=db.batch();
-    snapshot.forEach(doc=>{
-      batch.update(doc.ref, {status:'paid'});
-    });
+    const batch = db.batch();
+    snapshot.forEach(doc=>{ batch.update(doc.ref,{status:'paid'}); });
     return batch.commit();
   }).then(()=>{
+    // เพิ่ม payment
     return db.collection('users').doc(currentUser.uid).collection('payments').add({
       payerName,
       bankName,
       datetime,
-      amount: parseInt(getQueryParam('total')||0),
+      amount: total,
       status:'paid'
     });
   }).then(()=>{
@@ -28,3 +133,6 @@ function submitPayment(){
     window.location.href="prediction.html";
   }).catch(err=>alert(err.message));
 }
+</script>
+</body>
+</html>
