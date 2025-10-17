@@ -15,11 +15,14 @@ th,td{border:1px solid #ccc;padding:8px;text-align:center;}
 th{background:#9d8de3;color:#fff;}
 button{padding:6px 12px;border:none;border-radius:8px;background:#7ec4ff;color:#fff;cursor:pointer;transition:0.3s;}
 button:hover{opacity:0.9;}
+.logout-btn{background:#f36f6f;margin-bottom:15px;}
 </style>
 </head>
 <body>
 <div class="container">
 <h1>ข้อมูลลูกค้า</h1>
+
+<button class="logout-btn" onclick="logout()">Log out</button>
 
 <div id="user-info">
 <p><strong>Username:</strong> <span id="username"></span></p>
@@ -38,12 +41,13 @@ button:hover{opacity:0.9;}
 <th>วันที่</th>
 <th>สถานะ</th>
 <th>คำถาม</th>
+<th>ไพ่ที่เลือก</th>
 <th>คำทำนาย</th>
 <th>แก้ไขคำถาม/คำทำนาย</th>
 </tr>
 </thead>
 <tbody id="question-list">
-<tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>
+<tr><td colspan="7">กำลังโหลดข้อมูล...</td></tr>
 </tbody>
 </table>
 
@@ -98,6 +102,10 @@ auth.onAuthStateChanged(user=>{
   }
 });
 
+function logout(){
+  auth.signOut().then(()=>window.location.href="admin-login.html");
+}
+
 async function loadUserInfo(){
   const doc = await db.collection("users").doc(userId).get();
   if(doc.exists){
@@ -121,12 +129,14 @@ async function loadQuestions(){
     const date = data.timestamp?.toDate().toLocaleString() || "-";
     const status = data.prediction && data.prediction.trim()!=="" ? "ทำนายแล้ว" : "รอคำทำนาย";
     const prediction = data.prediction || "-";
+    const cards = data.cards ? data.cards.join(", ") : "-";
     const tr = document.createElement("tr");
     tr.innerHTML=`
       <td>${idx}</td>
       <td>${date}</td>
       <td>${status}</td>
       <td>${data.question || "-"}</td>
+      <td>${cards}</td>
       <td>${prediction}</td>
       <td><button onclick="editPrediction('${doc.id}')">แก้ไข</button></td>
     `;
@@ -165,3 +175,4 @@ async function loadPayments(){
 </script>
 </body>
 </html>
+
