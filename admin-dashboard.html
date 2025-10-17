@@ -22,123 +22,95 @@ input,select{padding:6px 8px; margin:5px;}
 <div class="container">
 <h1>Admin Dashboard</h1>
 
-<div style="margin-bottom:15px;">
-  <input type="text" id="search-username" placeholder="ค้นหา username">
-  <select id="filter-status">
-    <option value="">ทั้งหมด</option>
-    <option value="รอคำทำนาย">รอคำทำนาย</option>
-    <option value="ทำนายเสร็จแล้ว">ทำนายเสร็จแล้ว</option>
-  </select>
-  <button onclick="loadUsers()">ค้นหา/กรอง</button>
-</div>
-
 <table>
-  <thead>
-    <tr>
-      <th>ลำดับ</th>
-      <th>Username</th>
-      <th>สถานะการทำนาย</th>
-      <th>วันที่ชำระเงิน</th>
-      <th>แก้ไขทำนาย</th>
-    </tr>
-  </thead>
-  <tbody id="user-list">
-    <tr><td colspan="5">กำลังโหลดข้อมูล...</td></tr>
-  </tbody>
+<thead>
+<tr>
+<th>ลำดับ</th>
+<th>Username</th>
+<th>ชื่อจริง</th>
+<th>สถานะการทำนาย</th>
+<th>วันที่ล่าสุด</th>
+<th>แก้ไข/ทำนาย</th>
+</tr>
+</thead>
+<tbody id="user-list">
+<tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>
+</tbody>
 </table>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-const ADMIN_UID = "COSNiC8qzrP6dfWiumqLETrROuu2";
-
 const firebaseConfig = {
   apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
   authDomain: "horowednesday.firebaseapp.com",
   projectId: "horowednesday",
-  storageBucket: "horowednesday.firebasestorage.app",
+  storageBucket: "horowednesday.appspot.com",
   messagingSenderId: "604956033127",
   appId: "1:604956033127:web:fec565a41020ccf28814c2",
   measurementId: "G-B38JLFJPVS"
 };
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
 const db = firebase.firestore();
+const auth = firebase.auth();
 
-let currentUser;
+const ADMIN_UID = "COSNiC8qzrP6dfWiumqLETrROuu2";
 
 auth.onAuthStateChanged(user=>{
-  if(user){
-    currentUser = user;
-    if(user.uid !== ADMIN_UID){
-      alert("คุณไม่ได้รับสิทธิ์เข้าหน้านี้");
-      auth.signOut();
-      return;
-    }
-    loadUsers();
-  } else {
+  if(!user){
     window.location.href="admin-login.html";
+    return;
   }
+  if(user.uid!==ADMIN_UID){
+    alert("คุณไม่ได้รับสิทธิ์เข้าระบบแอดมิน");
+    auth.signOut();
+    return;
+  }
+  loadUsers();
 });
 
 async function loadUsers(){
-  const tbody = document.getElementById("user-list");
-  tbody.innerHTML = "<tr><td colspan='5'>กำลังโหลดข้อมูล...</td></tr>";
-  const searchUsername = document.getElementById("search-username").value.trim().toLowerCase();
-  const filterStatus = document.getElementById("filter-status").value;
-
+  const tbody=document.getElementById("user-list");
+  tbody.innerHTML="";
   try{
-    const usersSnap = await db.collection("users").get();
-    let idx = 1;
-    tbody.innerHTML = "";
-
+    const usersSnap=await db.collection("users").get();
+    let idx=1;
     for(const userDoc of usersSnap.docs){
-      const userData = userDoc.data();
-      const uid = userDoc.id;
-
-      // กรอง username
-      if(searchUsername && !userData.username?.toLowerCase().includes(searchUsername)) continue;
-
-      // ตรวจสอบคำถามเพื่อดูสถานะ
-      const questionsSnap = await db.collection("users").doc(uid).collection("questions").get();
-      let status = "รอคำทำนาย";
+      const udata=userDoc.data();
+      const uid=userDoc.id;
+      
+      // ดึงคำถามล่าสุดเพื่อตรวจสอบสถานะ
+      const questionsSnap = await db.collection("users").doc(uid).collection("questions").orderBy("timestamp","desc").limit(1).get();
+      let status="รอคำทำนาย";
+      let lastDate="-";
       if(!questionsSnap.empty){
-        const allAnswered = questionsSnap.docs.every(q => q.data().prediction && q.data().prediction.trim() !== "");
-        status = allAnswered ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
+        const q = questionsSnap.docs[0].data();
+        status = (q.prediction && q.prediction.trim()!=="") ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
+        lastDate = q.timestamp?.toDate().toLocaleString() || "-";
       }
 
-      if(filterStatus && status !== filterStatus) continue;
-
-      // วันที่ชำระเงินล่าสุด
-      let lastDate = "-";
-      const paymentsSnap = await db.collection("users").doc(uid).collection("payments").orderBy("datetime","asc").get();
-      if(!paymentsSnap.empty){
-        lastDate = paymentsSnap.docs[paymentsSnap.docs.length-1].data().datetime || "-";
-      }
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
         <td>${idx}</td>
-        <td>${userData.username || "-"}</td>
+        <td>${udata.username || "-"}</td>
+        <td>${udata.name || "-"}</td>
         <td>${status}</td>
         <td>${lastDate}</td>
-        <td><button onclick="goToInfo('${uid}')">แก้ไขทำนาย</button></td>
+        <td><button onclick="goToInfo('${uid}')">แก้ไข/ทำนาย</button></td>
       `;
       tbody.appendChild(tr);
       idx++;
     }
-
-    if(tbody.innerHTML === "") tbody.innerHTML="<tr><td colspan='5'>ไม่พบข้อมูล</td></tr>";
   } catch(err){
-    tbody.innerHTML = `<tr><td colspan='5'>เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="6">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
   }
 }
 
-function goToInfo(userId){
-  window.location.href = `admin-dashboard_info.html?userId=${userId}`;
+function goToInfo(uid){
+  window.location.href=`admin-dashboard_info.html?userId=${uid}`;
 }
 </script>
 </body>
