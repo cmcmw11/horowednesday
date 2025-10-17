@@ -3,40 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horowednesday Prediction Detail</title>
+<title>คำทำนาย</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Baloo 2', cursive;}
 body{background:linear-gradient(135deg,#c3bef0,#b4e0ff);padding:10px;}
 .container{max-width:700px;margin:0 auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-h1{color:#5d4fa2;margin-bottom:15px;}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;}
+header img{width:50px;height:50px;border-radius:50%;}
+header h1{color:#5d4fa2;font-size:1.5rem;}
+header button{padding:8px 12px;border:none;border-radius:10px;background:#9d8de3;color:#fff;cursor:pointer;transition:0.3s;}
+header button:hover{transform:scale(1.05);}
 table{width:100%;border-collapse:collapse;margin-top:15px;}
-th,td{border:1px solid #ccc;padding:8px;text-align:center;border-radius:8px;}
-th{background:#d7cfff;color:#5d4fa2;}
-textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;border:1px solid #ccc;}
-button{padding:6px 12px;margin-top:5px;border:none;border-radius:8px;background:#7ec4ff;color:#fff;cursor:pointer;}
+th,td{border:1px solid #ccc;padding:8px;text-align:left;border-radius:8px;}
+th{background:#d7cfff;color:#5d4fa2;width:30%;}
 .cards img{width:50px;height:75px;margin-right:5px;border-radius:6px;}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>รายละเอียดคำถามและคำทำนาย</h1>
-<button onclick="goBack()">ย้อนกลับ</button>
+<header>
+  <img src="https://raw.githubusercontent.com/username/repo/main/assets/images/wednesdaylogo.png" alt="Logo">
+  <h1>คำทำนาย</h1>
+  <button onclick="goBack()">กลับ</button>
+</header>
 
 <table>
-  <thead>
-    <tr>
-      <th>ลำดับ</th>
-      <th>วันที่</th>
-      <th>คำถาม</th>
-      <th>ราคา</th>
-      <th>คำทำนาย</th>
-      <th>ไพ่ที่เลือก</th>
-    </tr>
-  </thead>
-  <tbody id="prediction-detail">
-    <tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>
-  </tbody>
+  <tr>
+    <th>คำถาม</th>
+    <td id="question"></td>
+  </tr>
+  <tr>
+    <th>วันที่สร้าง</th>
+    <td id="date"></td>
+  </tr>
+  <tr>
+    <th>ราคา</th>
+    <td id="price"></td>
+  </tr>
+  <tr>
+    <th>ไพ่ที่เลือก</th>
+    <td class="cards" id="cards"></td>
+  </tr>
+  <tr>
+    <th>คำทำนาย</th>
+    <td id="prediction"></td>
+  </tr>
 </table>
 </div>
 
@@ -59,69 +71,50 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 let currentUser;
-let questionId;
-
-// ดึง questionId จาก query string
-const urlParams = new URLSearchParams(window.location.search);
-questionId = urlParams.get('questionId');
+let questionId = new URLSearchParams(window.location.search).get('questionId');
 
 auth.onAuthStateChanged(user=>{
   if(user){
     currentUser=user;
-    loadPredictionDetail();
+    loadQuestion();
   } else {
     window.location.href="index.html";
   }
 });
 
-function goBack(){ window.history.back(); }
+function goBack(){ window.location.href="prediction.html"; }
 
-async function loadPredictionDetail(){
-  const tbody = document.getElementById('prediction-detail');
-  tbody.innerHTML='<tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>';
-
+async function loadQuestion(){
   try{
     const docRef = db.collection('users').doc(currentUser.uid)
       .collection('questions').doc(questionId);
-    const docSnap = await docRef.get();
+    const doc = await docRef.get();
 
-    if(!docSnap.exists){
-      tbody.innerHTML='<tr><td colspan="6">ไม่พบข้อมูล</td></tr>';
+    if(!doc.exists){
+      alert("ไม่พบคำถามนี้");
       return;
     }
 
-    const data = docSnap.data();
+    const data = doc.data();
+    document.getElementById('question').innerText = data.question || '-';
     const date = data.timestamp?.toDate().toLocaleString() || '-';
-    const price = data.payment || '-'; // สมมติเก็บราคาใน field payment
-    const prediction = data.prediction || '';
-    const question = data.question || '';
-    const cards = data.cards || [];
+    document.getElementById('date').innerText = date;
+    document.getElementById('price').innerText = data.amount ? data.amount + ' บาท' : '-';
+    document.getElementById('prediction').innerText = data.prediction || 'ยังไม่มีคำทำนาย';
 
-    const cardHTML = cards.map(c=>`<img src="https://raw.githubusercontent.com/username/repo/main/assets/images/tarot/${c.replace(/ /g,'_')}.png" title="${c}">`).join('');
-
-    tbody.innerHTML=`
-      <tr>
-        <td>1</td>
-        <td>${date}</td>
-        <td>${question}</td>
-        <td>${price}</td>
-        <td><textarea id="prediction-text" rows="4">${prediction}</textarea><br><button onclick="savePrediction()">บันทึกคำทำนาย</button></td>
-        <td class="cards">${cardHTML}</td>
-      </tr>
-    `;
-  } catch(err){
-    tbody.innerHTML=`<tr><td colspan="6">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+    const cardsDiv = document.getElementById('cards');
+    cardsDiv.innerHTML = '';
+    if(data.cards){
+      data.cards.forEach(c=>{
+        const img = document.createElement('img');
+        img.src = `https://raw.githubusercontent.com/username/repo/main/assets/images/tarot/${c.replace(/ /g,'_')}.png`;
+        img.title = c;
+        cardsDiv.appendChild(img);
+      });
+    }
+  }catch(err){
+    alert("เกิดข้อผิดพลาด: " + err.message);
   }
-}
-
-function savePrediction(){
-  const text = document.getElementById('prediction-text').value.trim();
-  if(!text) return alert("กรุณากรอกคำทำนาย");
-
-  db.collection('users').doc(currentUser.uid)
-    .collection('questions').doc(questionId)
-    .update({prediction:text})
-    .then(()=>alert("บันทึกคำทำนายเรียบร้อย!"));
 }
 </script>
 </body>
