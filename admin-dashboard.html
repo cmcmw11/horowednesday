@@ -6,42 +6,38 @@
 <title>Admin Dashboard - Horowednesday</title>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa',cursive;}
-body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff); padding:20px; min-height:100vh;}
-h1{color:#5d4fa2; margin-bottom:20px;}
-.container{background:#fff; border-radius:15px; padding:20px; max-width:1000px; margin:auto; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
-table{width:100%; border-collapse:collapse;}
-th,td{border:1px solid #ccc; padding:8px; text-align:center;}
-th{background:#9d8de3; color:#fff;}
-button{padding:6px 12px; border:none; border-radius:8px; background:#7ec4ff; color:#fff; cursor:pointer; transition:0.3s;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
+body{background: linear-gradient(135deg,#b4e0ff,#d7c9ff);padding:20px;}
+.container{background:#fff;border-radius:15px;padding:20px;max-width:1000px;margin:auto;box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+h1{color:#5d4fa2;margin-bottom:20px;}
+table{width:100%;border-collapse:collapse;}
+th,td{border:1px solid #ccc;padding:8px;text-align:center;}
+th{background:#9d8de3;color:#fff;}
+button{padding:6px 12px;border:none;border-radius:8px;background:#7ec4ff;color:#fff;cursor:pointer;transition:0.3s;}
 button:hover{opacity:0.9;}
-input,select{padding:6px 8px; margin:5px;}
 </style>
 </head>
 <body>
 <div class="container">
 <h1>Admin Dashboard</h1>
-
 <table>
 <thead>
 <tr>
 <th>ลำดับ</th>
 <th>Username</th>
-<th>ชื่อจริง</th>
+<th>ชื่อ</th>
 <th>สถานะการทำนาย</th>
-<th>วันที่ล่าสุด</th>
 <th>แก้ไข/ทำนาย</th>
 </tr>
 </thead>
 <tbody id="user-list">
-<tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>
+<tr><td colspan="5">กำลังโหลดข้อมูล...</td></tr>
 </tbody>
 </table>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -50,68 +46,53 @@ const firebaseConfig = {
   projectId: "horowednesday",
   storageBucket: "horowednesday.appspot.com",
   messagingSenderId: "604956033127",
-  appId: "1:604956033127:web:fec565a41020ccf28814c2",
-  measurementId: "G-B38JLFJPVS"
+  appId: "1:604956033127:web:fec565a41020ccf28814c2"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const auth = firebase.auth();
 
+// UID ของแอดมิน
 const ADMIN_UID = "COSNiC8qzrP6dfWiumqLETrROuu2";
 
-auth.onAuthStateChanged(user=>{
-  if(!user){
-    window.location.href="admin-login.html";
-    return;
-  }
-  if(user.uid!==ADMIN_UID){
-    alert("คุณไม่ได้รับสิทธิ์เข้าระบบแอดมิน");
-    auth.signOut();
-    return;
-  }
-  loadUsers();
-});
-
 async function loadUsers(){
-  const tbody=document.getElementById("user-list");
-  tbody.innerHTML="";
+  const tbody = document.getElementById("user-list");
+  tbody.innerHTML = "";
   try{
-    const usersSnap=await db.collection("users").get();
+    const usersSnap = await db.collection("users").get();
     let idx=1;
     for(const userDoc of usersSnap.docs){
-      const udata=userDoc.data();
-      const uid=userDoc.id;
-      
-      // ดึงคำถามล่าสุดเพื่อตรวจสอบสถานะ
-      const questionsSnap = await db.collection("users").doc(uid).collection("questions").orderBy("timestamp","desc").limit(1).get();
-      let status="รอคำทำนาย";
-      let lastDate="-";
+      const userData = userDoc.data();
+      const uid = userDoc.id;
+
+      // ดึงคำถามล่าสุดเพื่อเช็คสถานะ
+      const questionsSnap = await db.collection("users").doc(uid).collection("questions").get();
+      let status = "รอทำนาย";
       if(!questionsSnap.empty){
-        const q = questionsSnap.docs[0].data();
-        status = (q.prediction && q.prediction.trim()!=="") ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
-        lastDate = q.timestamp?.toDate().toLocaleString() || "-";
+        const allAnswered = questionsSnap.docs.every(q=>q.data().prediction && q.data().prediction.trim()!=="");
+        status = allAnswered ? "ทำนายเสร็จแล้ว" : "รอทำนาย";
       }
 
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
         <td>${idx}</td>
-        <td>${udata.username || "-"}</td>
-        <td>${udata.name || "-"}</td>
+        <td>${userData.username||"-"}</td>
+        <td>${userData.name||"-"}</td>
         <td>${status}</td>
-        <td>${lastDate}</td>
         <td><button onclick="goToInfo('${uid}')">แก้ไข/ทำนาย</button></td>
       `;
       tbody.appendChild(tr);
       idx++;
     }
   } catch(err){
-    tbody.innerHTML=`<tr><td colspan="6">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
   }
 }
 
-function goToInfo(uid){
-  window.location.href=`admin-dashboard_info.html?userId=${uid}`;
+function goToInfo(userId){
+  window.location.href = `admin-dashboard_info.html?userId=${userId}`;
 }
+
+loadUsers();
 </script>
 </body>
 </html>
