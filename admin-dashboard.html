@@ -3,87 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Horowednesday - ดูคำทำนาย</title>
+  <title>Admin Dashboard - Horowednesday</title>
   <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Comfortaa', cursive;
       background: linear-gradient(135deg,#c9d6ff,#e2e2e2);
-      margin:0; padding:0;
+      margin:0; padding:20px;
     }
     .container {
-      max-width:900px;
-      margin:30px auto;
+      max-width:1000px;
+      margin:auto;
       background:#fff;
-      padding:30px;
+      padding:25px;
       border-radius:20px;
       box-shadow:0 10px 25px rgba(0,0,0,0.1);
     }
     h1 { text-align:center; color:#5d4fa2; }
-    h2 { color:#5d4fa2; margin-top:20px; }
-    .user-info, .question-section {
-      background:#f9f8ff;
-      border-radius:15px;
-      padding:15px;
-      margin-top:10px;
+    .filters {
+      display:flex; gap:10px; margin:15px 0;
     }
-    .user-info p, .question-section p {
-      margin:5px 0;
-      color:#5d4fa2;
+    input, select {
+      padding:8px; border-radius:10px; border:1px solid #ccc;
     }
-    textarea {
-      width:100%;
-      border-radius:10px;
-      border:1px solid #ccc;
-      padding:10px;
-      margin-top:10px;
-      font-size:1rem;
+    table {
+      width:100%; border-collapse:collapse; margin-top:10px;
     }
+    th, td {
+      border:1px solid #ddd; padding:10px; text-align:center;
+    }
+    th {
+      background:#f0eaff; color:#5d4fa2;
+    }
+    tr:hover { background:#f9f8ff; }
     button {
-      background:linear-gradient(135deg,#9d8de3,#7ec4ff);
-      color:white;
+      padding:5px 10px;
       border:none;
-      padding:10px 20px;
-      border-radius:10px;
+      border-radius:8px;
+      background:linear-gradient(135deg,#9d8de3,#7ec4ff);
+      color:#fff;
       cursor:pointer;
-      margin-top:15px;
       transition:0.3s;
     }
     button:hover { transform:scale(1.05); }
-    .back-btn { background:#ccc; color:#333; margin-right:10px; }
+    .logout {
+      float:right; background:#f66; margin-top:-40px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>รายละเอียดคำทำนาย</h1>
-    <button class="back-btn" onclick="goBack()">⬅ กลับ</button>
+    <h1>🧙‍♀️ Horowednesday Admin Dashboard</h1>
+    <button class="logout" onclick="logout()">ออกจากระบบ</button>
 
-    <h2>ข้อมูลส่วนตัวลูกค้า</h2>
-    <div class="user-info" id="user-info">
-      <p>ชื่อ: -</p>
-      <p>วันเกิด: -</p>
-      <p>เพศ: -</p>
-      <p>อาชีพ: -</p>
-      <p>สถานะความสัมพันธ์: -</p>
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="🔍 ค้นหาชื่อลูกค้า..." oninput="renderTable()">
+      <select id="filterStatus" onchange="renderTable()">
+        <option value="">-- ทุกสถานะ --</option>
+        <option value="pending">รอคำทำนาย</option>
+        <option value="answered">ทำนายแล้ว</option>
+      </select>
+      <select id="sortDate" onchange="renderTable()">
+        <option value="desc">วันที่ล่าสุดก่อน</option>
+        <option value="asc">วันที่เก่าก่อน</option>
+      </select>
     </div>
 
-    <h2>รายละเอียดคำถาม</h2>
-    <div class="question-section" id="question-section">
-      <p><strong>วันที่:</strong> <span id="q-date">-</span></p>
-      <p><strong>สถานะ:</strong> <span id="q-status">-</span></p>
-      <p><strong>คำถาม:</strong></p>
-      <textarea id="q-text" readonly></textarea>
-
-      <div id="answer-block">
-        <p><strong>คำตอบ:</strong></p>
-        <textarea id="q-answer" readonly></textarea>
-      </div>
-
-      <div id="edit-section" style="display:none;">
-        <button onclick="enableEdit()">✏️ แก้ไขคำถาม</button>
-        <button onclick="saveEdit()" style="display:none;" id="save-btn">💾 บันทึก</button>
-      </div>
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>Username</th>
+          <th>สถานะ</th>
+          <th>วันที่</th>
+          <th>แก้ไขทำนาย</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -104,75 +101,72 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // รับ uid และ qid จาก URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const uid = urlParams.get("uid");
-    const qid = urlParams.get("qid");
-
-    let currentUser, questionRef;
+    let questionsList = [];
 
     auth.onAuthStateChanged(async user => {
       if (!user) {
-        window.location.href = "index.html";
+        window.location.href = "admin-login.html";
         return;
       }
-      currentUser = user;
-      loadUserInfo();
-      loadQuestion();
+      loadAllQuestions();
     });
 
-    // โหลดข้อมูลส่วนตัวลูกค้า
-    function loadUserInfo() {
-      db.collection("users").doc(uid).get().then(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          document.getElementById("user-info").innerHTML = `
-            <p>ชื่อ: ${data.name || "-"}</p>
-            <p>วันเกิด: ${data.birth || "-"}</p>
-            <p>เพศ: ${data.gender || "-"}</p>
-            <p>อาชีพ: ${data.job || "-"}</p>
-            <p>สถานะความสัมพันธ์: ${data.relationship || "-"}</p>
-          `;
-        }
+    async function loadAllQuestions() {
+      const usersSnap = await db.collection("users").get();
+      questionsList = [];
+
+      for (const userDoc of usersSnap.docs) {
+        const userData = userDoc.data();
+        const username = userData.username || "-";
+
+        const qSnap = await db.collection("users").doc(userDoc.id).collection("questions").get();
+        qSnap.forEach(qDoc => {
+          const qData = qDoc.data();
+          questionsList.push({
+            uid: userDoc.id,
+            qid: qDoc.id,
+            username,
+            status: qData.status || "pending",
+            date: qData.timestamp ? qData.timestamp.toDate() : new Date(0)
+          });
+        });
+      }
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("table-body");
+      tbody.innerHTML = "";
+
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const filterStatus = document.getElementById("filterStatus").value;
+      const sortDate = document.getElementById("sortDate").value;
+
+      let filtered = questionsList
+        .filter(q => q.username.toLowerCase().includes(search))
+        .filter(q => !filterStatus || q.status === filterStatus)
+        .sort((a,b) => sortDate === "desc" ? b.date - a.date : a.date - b.date);
+
+      filtered.forEach((q, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${q.username}</td>
+          <td>${q.status === "answered" ? "✅ ทำนายแล้ว" : "⏳ รอคำทำนาย"}</td>
+          <td>${q.date.toLocaleString("th-TH")}</td>
+          <td><button onclick="goToInfo('${q.uid}','${q.qid}')">🔮 แก้ไขทำนาย</button></td>
+        `;
+        tbody.appendChild(tr);
       });
     }
 
-    // โหลดคำถาม/คำตอบ
-    async function loadQuestion() {
-      questionRef = db.collection("users").doc(uid).collection("questions").doc(qid);
-      const doc = await questionRef.get();
-      if (!doc.exists) return alert("ไม่พบคำถามนี้");
-
-      const data = doc.data();
-      document.getElementById("q-date").innerText = data.timestamp ? data.timestamp.toDate().toLocaleString("th-TH") : "-";
-      document.getElementById("q-status").innerText = data.status || "-";
-      document.getElementById("q-text").value = data.question || "-";
-      document.getElementById("q-answer").value = data.answer || "-";
-
-      // ลูกค้าของตัวเองเท่านั้นถึงจะแก้ได้
-      if (currentUser.uid === uid && (!data.answer || data.answer.trim() === "")) {
-        document.getElementById("edit-section").style.display = "block";
-      }
+    function goToInfo(uid, qid) {
+      window.location.href = `admin-dashboard_info.html?uid=${uid}&qid=${qid}`;
     }
 
-    function enableEdit() {
-      const qText = document.getElementById("q-text");
-      qText.removeAttribute("readonly");
-      document.getElementById("save-btn").style.display = "inline-block";
-    }
-
-    async function saveEdit() {
-      const newQuestion = document.getElementById("q-text").value.trim();
-      if (!newQuestion) return alert("กรุณากรอกคำถาม");
-
-      await questionRef.update({ question: newQuestion });
-      alert("บันทึกคำถามใหม่เรียบร้อย!");
-      document.getElementById("q-text").setAttribute("readonly", true);
-      document.getElementById("save-btn").style.display = "none";
-    }
-
-    function goBack() {
-      window.location.href = "prediction.html";
+    function logout() {
+      auth.signOut().then(()=>window.location.href="admin-login.html");
     }
   </script>
 </body>
