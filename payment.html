@@ -107,32 +107,58 @@ function submitPayment(){
   let bankName = document.getElementById('bank-select').value;
   const bankOther = document.getElementById('bank-other').value.trim();
   const datetime = document.getElementById('transfer-datetime').value;
-  const total = parseInt(getQueryParam('total')||0);
+  const totalStr = getQueryParam('total');
+  const total = parseInt(totalStr || '0');
 
-  if(bankName==="อื่นๆ"){ if(!bankOther){ alert("กรุณาระบุธนาคาร"); return; } bankName=bankOther; }
-  if(!payerName || !bankName || !datetime){ alert("กรุณากรอกข้อมูลให้ครบ"); return; }
-  if(!total){ alert("ไม่พบยอดชำระ กรุณากลับไปหน้าหลัก"); return; }
+  if(bankName === "อื่นๆ"){
+    if(!bankOther){ 
+      alert("กรุณาระบุธนาคาร"); 
+      return; 
+    }
+    bankName = bankOther;
+  }
 
-  // เปลี่ยน status ของ questions เป็น paid
+  if(!payerName || !bankName || !datetime){
+    alert("กรุณากรอกข้อมูลให้ครบ"); 
+    return; 
+  }
+
+  if(total <= 0){
+    alert("ไม่พบยอดชำระ กรุณากลับไปหน้าหลัก"); 
+    return; 
+  }
+
   const userQuestionsRef = db.collection('users').doc(currentUser.uid).collection('questions');
-  userQuestionsRef.where('status','==','pending').get().then(snapshot=>{
+
+  // อัปเดต status ของ questions เป็น paid
+  userQuestionsRef.where('status', '==', 'pending').get()
+  .then(snapshot=>{
     const batch = db.batch();
-    snapshot.forEach(doc=>{ batch.update(doc.ref,{status:'paid'}); });
+    snapshot.forEach(doc=>{
+      batch.update(doc.ref, { status: 'paid' });
+    });
     return batch.commit();
-  }).then(()=>{
-    // เพิ่ม payment
+  })
+  .then(()=>{
+    // เพิ่มข้อมูล payment
     return db.collection('users').doc(currentUser.uid).collection('payments').add({
       payerName,
       bankName,
       datetime,
       amount: total,
-      status:'paid'
+      status: 'paid'
     });
-  }).then(()=>{
+  })
+  .then(()=>{
     alert("ส่งข้อมูลเรียบร้อย! ระบบจะพาไปหน้ารายการทำนาย");
-    window.location.href="prediction.html";
-  }).catch(err=>alert(err.message));
+    window.location.href = "prediction.html";
+  })
+  .catch(err=>{
+    console.error(err);
+    alert("เกิดข้อผิดพลาด: " + err.message);
+  });
 }
+
 </script>
 </body>
 </html>
