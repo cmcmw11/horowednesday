@@ -1,65 +1,3 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horowednesday Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
-body{background:linear-gradient(135deg,#c3bef0,#b4e0ff);padding:10px;}
-.container{background:#fff;border-radius:20px;padding:20px;max-width:520px;margin:0 auto;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-header img{width:70px;height:70px;border-radius:50%;margin:auto;display:block;}
-header h1{text-align:center;color:#5d4fa2;margin:10px 0;font-size:1.5rem;}
-h2{color:#5d4fa2;margin:10px 0;}
-textarea{width:100%;padding:10px;margin:5px 0;border-radius:10px;border:1px solid #ccc;resize:none;font-size:0.95rem;}
-button{padding:10px;border:none;border-radius:12px;background:linear-gradient(135deg,#9d8de3,#7ec4ff);color:#fff;font-size:1rem;cursor:pointer;transition:0.3s;}
-button:hover{transform: scale(1.05);}
-.deck-controls{display:flex;justify-content:space-between;margin-bottom:10px;}
-.deck-controls button{flex:1;margin:0 5px;}
-#deck{position:relative;width:100%;height:280px;margin-top:10px;}
-.card{width:60px;height:90px;background:url('tarotcard.png') no-repeat center/cover;border-radius:6px;position:absolute;cursor:pointer;border:2px solid transparent;transition:0.2s;}
-.card.selected{border-color:#7e5de8;}
-.question-section{display:flex;align-items:flex-start;gap:10px;margin-top:10px;}
-#question-input{flex:1;}
-.question-list{margin-top:15px;}
-.question-item{background:#f0f0ff;border-radius:10px;padding:10px;margin-bottom:8px;}
-.question-item h3{font-size:1rem;color:#5d4fa2;margin-bottom:5px;}
-.total{margin-top:5px;font-weight:bold;color:#5d4fa2;text-align:right;}
-</style>
-</head>
-<body>
-<div class="container">
-<header>
-<img src="wednesdaylogo.png" alt="Horowednesday Logo">
-<h1>Horowednesday</h1>
-</header>
-
-<h2>ตั้งคำถามใหม่</h2>
-<div class="question-section">
-  <textarea id="question-input" rows="2" placeholder="พิมพ์คำถามของคุณ..."></textarea>
-  <button style="height:48px;" onclick="addQuestion()">เพิ่มคำถาม</button>
-</div>
-
-<h2>ไพ่ของคุณ</h2>
-<div class="deck-controls">
-  <button onclick="cutDeck()">ตัดไพ่</button>
-  <button onclick="shuffleDeck()">สับไพ่</button>
-</div>
-<div id="deck"></div>
-
-<div class="total" id="total-amount">ยอดรวม: 0 บาท</div>
-
-<h2>คำถามของฉัน</h2>
-<div class="question-list" id="question-list"></div>
-
-<button onclick="goToPayment()" style="width:100%;margin-top:10px;">จ่ายเงิน</button>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
@@ -80,120 +18,134 @@ let selectedCards = [];
 const deckDiv = document.getElementById('deck');
 
 const tarotNames = [
-"Ace of Cups","Two of Cups","Three of Cups","Four of Cups","Five of Cups",
-"Six of Cups","Seven of Cups","Eight of Cups","Nine of Cups","Ten of Cups",
-"Page of Cups","Knight of Cups","Queen of Cups","King of Cups",
-"Ace of Pentacles","Two of Pentacles","Three of Pentacles","Four of Pentacles",
-"Five of Pentacles","Six of Pentacles","Seven of Pentacles","Eight of Pentacles",
-"Nine of Pentacles","Ten of Pentacles","Page of Pentacles","Knight of Pentacles",
-"Queen of Pentacles","King of Pentacles",
-"Ace of Swords","Two of Swords","Three of Swords","Four of Swords","Five of Swords",
-"Six of Swords","Seven of Swords","Eight of Swords","Nine of Swords","Ten of Swords",
-"Page of Swords","Knight of Swords","Queen of Swords","King of Swords",
-"Ace of Wands","Two of Wands","Three of Wands","Four of Wands","Five of Wands",
-"Six of Wands","Seven of Wands","Eight of Wands","Nine of Wands","Ten of Wands",
-"Page of Wands","Knight of Wands","Queen of Wands","King of Wands"
+  "Ace of Cups","Two of Cups","Three of Cups","Four of Cups","Five of Cups",
+  "Six of Cups","Seven of Cups","Eight of Cups","Nine of Cups","Ten of Cups",
+  "Page of Cups","Knight of Cups","Queen of Cups","King of Cups",
+  "Ace of Pentacles","Two of Pentacles","Three of Pentacles","Four of Pentacles",
+  "Five of Pentacles","Six of Pentacles","Seven of Pentacles","Eight of Pentacles",
+  "Nine of Pentacles","Ten of Pentacles","Page of Pentacles","Knight of Pentacles",
+  "Queen of Pentacles","King of Pentacles",
+  "Ace of Swords","Two of Swords","Three of Swords","Four of Swords","Five of Swords",
+  "Six of Swords","Seven of Swords","Eight of Swords","Nine of Swords","Ten of Swords",
+  "Page of Swords","Knight of Swords","Queen of Swords","King of Swords",
+  "Ace of Wands","Two of Wands","Three of Wands","Four of Wands","Five of Wands",
+  "Six of Wands","Seven of Wands","Eight of Wands","Nine of Wands","Ten of Wands",
+  "Page of Wands","Knight of Wands","Queen of Wands","King of Wands",
+  "The Fool","The Magician","The High Priestess","The Empress","The Emperor",
+  "The Hierophant","The Lovers","The Chariot","Strength","The Hermit",
+  "Wheel of Fortune","Justice","The Hanged Man","Death","Temperance",
+  "The Devil","The Tower","The Star","The Moon","The Sun","Judgement","The World"
 ];
 let deck = [...tarotNames];
 
-auth.onAuthStateChanged(user=>{
-  if(user) currentUser=user;
-  else window.location.href="index.html";
+auth.onAuthStateChanged(user => {
+  if (user) currentUser = user;
+  else window.location.href = "index.html";
   renderDeck();
 });
 
-function renderDeck(){
-  deckDiv.innerHTML='';
-  const rowCount = 3;
+function renderDeck() {
+  deckDiv.innerHTML = '';
+  const rowCount = 3; // จำนวนแถว
   const cardsPerRow = Math.ceil(deck.length / rowCount);
-  const offsetY = 25;
-  const spacingX = 15;
+  const offsetY = 20; // ระยะซ้อนในแนวตั้ง
+  const spacingX = 8; // ระยะห่างไพ่แต่ละใบในแนวนอน
 
-  deck.forEach((card,i)=>{
+  deck.forEach((card, i) => {
     const cardDiv = document.createElement('div');
-    cardDiv.className='card';
+    cardDiv.className = 'card';
     cardDiv.dataset.cardName = card;
 
-    const row = Math.floor(i/cardsPerRow);
-    const col = i%cardsPerRow;
+    const row = Math.floor(i / cardsPerRow);
+    const col = i % cardsPerRow;
+    const rowWidth = (cardsPerRow - 1) * spacingX + 60;
+    const startX = (deckDiv.clientWidth - rowWidth) / 2;
 
-    const rowWidth = (cardsPerRow-1)*spacingX+60;
-    const startX = (deckDiv.clientWidth - rowWidth)/2;
-    cardDiv.style.top = `${row*offsetY}px`;
-    cardDiv.style.left = `${startX+col*spacingX}px`;
-    cardDiv.style.zIndex=i;
+    // จัดตำแหน่งซ้อนสวย ๆ แบบกอง
+    cardDiv.style.top = `${row * offsetY + row * 100}px`;
+    cardDiv.style.left = `${startX + col * spacingX}px`;
+    cardDiv.style.zIndex = i;
 
-    cardDiv.onclick = ()=>{
-      if(cardDiv.classList.contains('selected')){
+    // คลิกเลือกไพ่
+    cardDiv.onclick = () => {
+      if (cardDiv.classList.contains('selected')) {
         cardDiv.classList.remove('selected');
-        selectedCards = selectedCards.filter(c=>c!==card);
-      } else if(selectedCards.length<3){
+        selectedCards = selectedCards.filter(c => c !== card);
+      } else if (selectedCards.length < 3) {
         cardDiv.classList.add('selected');
         selectedCards.push(card);
-      } else { alert("เลือกได้แค่ 3 ใบต่อคำถาม"); }
+      } else {
+        alert("เลือกได้แค่ 3 ใบต่อคำถาม");
+      }
     };
 
     deckDiv.appendChild(cardDiv);
   });
 }
 
-function shuffleDeck(){
-  for(let i=deck.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [deck[i],deck[j]]=[deck[j],deck[i]];
-  }
+function shuffleDeck() {
+  deck.sort(() => Math.random() - 0.5);
   renderDeck();
 }
 
-function cutDeck(){
-  const mid = Math.floor(deck.length/2);
-  deck = deck.slice(mid).concat(deck.slice(0,mid));
+function cutDeck() {
+  const cutIndex = Math.floor(Math.random() * deck.length);
+  deck = deck.slice(cutIndex).concat(deck.slice(0, cutIndex));
   renderDeck();
 }
 
-function addQuestion(){
-  const q=document.getElementById('question-input').value.trim();
-  if(!q){ alert("กรุณากรอกคำถาม"); return; }
-  if(selectedCards.length!==3){ alert("เลือกไพ่ 3 ใบด้วย"); return; }
-  questions.push({question:q,cards:[...selectedCards]});
-  selectedCards=[];
-  document.getElementById('question-input').value='';
+function addQuestion() {
+  const q = document.getElementById('question-input').value.trim();
+  if (!q) return alert("กรุณากรอกคำถาม");
+  if (selectedCards.length !== 3) return alert("เลือกไพ่ 3 ใบด้วย");
+
+  questions.push({ question: q, cards: [...selectedCards] });
+  selectedCards = [];
+  document.getElementById('question-input').value = '';
   renderDeck();
   renderQuestions();
 }
 
-function renderQuestions(){
+function renderQuestions() {
   const list = document.getElementById('question-list');
-  list.innerHTML='';
-  questions.forEach((q,i)=>{
-    const div=document.createElement('div');
-    div.className='question-item';
-    div.innerHTML=`<h3>คำถาม ${i+1}</h3><p>${q.question}</p><p>ไพ่: ${q.cards.join(", ")}</p>`;
+  list.innerHTML = '';
+  questions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'question-item';
+    div.innerHTML = `
+      <h3>คำถาม ${i + 1}</h3>
+      <p>${q.question}</p>
+      <p>ไพ่: ${q.cards.join(", ")}</p>`;
     list.appendChild(div);
   });
-  document.getElementById('total-amount').innerText=`ยอดชำระ: ${questions.length*19} บาท`;
+  document.getElementById('total-amount').innerText = `ยอดชำระ: ${questions.length * 19} บาท`;
 }
 
-async function goToPayment(){
-  if(questions.length===0){ alert("คุณยังไม่มีคำถาม"); return; }
+async function goToPayment() {
+  if (questions.length === 0) {
+    alert("คุณยังไม่มีคำถาม");
+    return;
+  }
   const userRef = db.collection('users').doc(currentUser.uid).collection('questions');
-  try{
-    for(const q of questions){
+  try {
+    for (const q of questions) {
       await userRef.add({
-        question:q.question,
-        cards:q.cards,
-        amount:19,
-        status:'pending',
-        timestamp:firebase.firestore.FieldValue.serverTimestamp(),
-        prediction:""
+        question: q.question,
+        cards: q.cards,
+        amount: 19,
+        status: 'pending',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        prediction: ""
       });
     }
-    const total=questions.length*19;
-    questions=[];
+    const total = questions.length * 19;
+    questions = [];
     renderQuestions();
-    window.location.href=`payment.html?total=${total}`;
-  }catch(err){ alert("เกิดข้อผิดพลาด: "+err.message); }
+    window.location.href = `payment.html?total=${total}`;
+  } catch (err) {
+    alert("เกิดข้อผิดพลาด: " + err.message);
+  }
 }
+
+window.addEventListener('resize', renderDeck);
 </script>
-</body>
-</html>
