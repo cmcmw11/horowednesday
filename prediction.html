@@ -1,146 +1,135 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horowednesday - สมัคร / เข้าสู่ระบบ</title>
-<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0; padding:0; box-sizing:border-box; font-family:'Comfortaa',cursive;}
-body{background: linear-gradient(135deg,#c3bef0,#b4e0ff); padding:20px; min-height:100vh; display:flex; align-items:center; justify-content:center;}
-.container{background:#fff; border-radius:20px; padding:30px; width:350px; box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-h1{color:#5d4fa2; margin-bottom:20px; text-align:center;}
-input,select{width:100%; padding:10px; margin:8px 0; border-radius:10px; border:1px solid #ccc;}
-button{width:100%; padding:12px; margin:10px 0; border:none; border-radius:12px; background:linear-gradient(135deg,#9d8de3,#7ec4ff); color:#fff; font-size:1rem; cursor:pointer; transition:0.3s;}
-button:hover{transform:scale(1.05);}
-.toggle-btn{background:#7ec4ff; margin-top:5px;}
-.error{color:red; font-size:0.9rem; margin-bottom:5px;}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horowednesday - รายการคำถามของคุณ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Comfortaa', cursive; background: linear-gradient(135deg,#d4e0ff,#e6d6ff); margin:0; padding:0; }
+    .container { max-width:900px; margin:30px auto; background:#fff; padding:30px; border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,0.1); }
+    h1 { text-align:center; color:#5d4fa2; }
+    h2 { color:#5d4fa2; margin-top:20px; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { padding:10px; text-align:center; border-bottom:1px solid #ddd; }
+    th { background:#f3f1ff; color:#5d4fa2; }
+    button { background:linear-gradient(135deg,#9d8de3,#7ec4ff); color:white; border:none; padding:8px 14px; border-radius:10px; cursor:pointer; transition:0.3s; }
+    button:hover { transform:scale(1.05); }
+    .user-info { background:#f9f8ff; border-radius:15px; padding:15px; margin-top:10px; }
+    .user-info p { margin:5px 0; color:#5d4fa2; }
+    .logout { float:right; background:#ff9a9e; }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>รายการคำถามของคุณ</h1>
+    <button class="logout" onclick="logout()">ออกจากระบบ</button>
 
-<div class="container">
-  <h1>Horowednesday</h1>
+    <h2>ข้อมูลส่วนตัว</h2>
+    <div class="user-info" id="user-info">
+      <p>ชื่อ: -</p>
+      <p>วันเกิด: -</p>
+      <p>เพศ: -</p>
+      <p>อาชีพ: -</p>
+      <p>สถานะความสัมพันธ์: -</p>
+    </div>
 
-  <div id="signup-form">
-    <h2>สมัครสมาชิก</h2>
-    <div class="error" id="signup-error"></div>
-    <input type="text" id="signup-name" placeholder="ชื่อ" required>
-    <input type="date" id="signup-birth" placeholder="วันเกิด" required>
-    <select id="signup-gender">
-      <option value="">-- เลือกเพศ --</option>
-      <option value="หญิง">หญิง</option>
-      <option value="ชาย">ชาย</option>
-      <option value="อื่นๆ">อื่นๆ</option>
-    </select>
-    <input type="text" id="signup-job" placeholder="อาชีพ" required>
-    <input type="text" id="signup-relationship" placeholder="สถานะความสัมพันธ์" required>
-    <input type="email" id="signup-email" placeholder="Email" required>
-    <input type="password" id="signup-password" placeholder="รหัสผ่าน" required>
-    <button onclick="signup()">สมัครสมาชิก</button>
-    <button class="toggle-btn" onclick="toggleForms()">ฉันมีบัญชีอยู่แล้ว</button>
+    <h2>รายการคำถาม</h2>
+    <table id="questions-table">
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>วันที่</th>
+          <th>สถานะ</th>
+          <th>คำถาม</th>
+          <th>การจัดการ</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
-  <div id="login-form" style="display:none;">
-    <h2>เข้าสู่ระบบ</h2>
-    <div class="error" id="login-error"></div>
-    <input type="email" id="login-email" placeholder="Email" required>
-    <input type="password" id="login-password" placeholder="รหัสผ่าน" required>
-    <button onclick="login()">เข้าสู่ระบบ</button>
-    <button class="toggle-btn" onclick="toggleForms()">สมัครสมาชิก</button>
-  </div>
-</div>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+      authDomain: "horowednesday.firebaseapp.com",
+      projectId: "horowednesday",
+      storageBucket: "horowednesday.firebasestorage.app",
+      messagingSenderId: "604956033127",
+      appId: "1:604956033127:web:fec565a41020ccf28814c2",
+      measurementId: "G-B38JLFJPVS"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    let currentUser;
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
-  authDomain: "horowednesday.firebaseapp.com",
-  projectId: "horowednesday",
-  storageBucket: "horowednesday.appspot.com",
-  messagingSenderId: "604956033127",
-  appId: "1:604956033127:web:fec565a41020ccf28814c2",
-  measurementId: "G-B38JLFJPVS"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentUser = user;
+      loadUserInfo();
+      loadQuestions();
+    });
 
-function toggleForms(){
-  document.getElementById('signup-form').style.display = 
-    document.getElementById('signup-form').style.display === 'none' ? 'block' : 'none';
-  document.getElementById('login-form').style.display = 
-    document.getElementById('login-form').style.display === 'none' ? 'block' : 'none';
-}
-
-// สมัครสมาชิก
-function signup(){
-  const name = document.getElementById('signup-name').value.trim();
-  const birth = document.getElementById('signup-birth').value;
-  const gender = document.getElementById('signup-gender').value;
-  const job = document.getElementById('signup-job').value.trim();
-  const relationship = document.getElementById('signup-relationship').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
-  const password = document.getElementById('signup-password').value;
-
-  const errorDiv = document.getElementById('signup-error');
-  errorDiv.innerText = '';
-
-  if(!name || !birth || !gender || !job || !relationship || !email || !password){
-    errorDiv.innerText = "กรุณากรอกข้อมูลให้ครบ";
-    return;
-  }
-
-  auth.createUserWithEmailAndPassword(email,password)
-    .then(cred=>{
-      // บันทึกข้อมูลส่วนตัวไป Firestore
-      return db.collection('users').doc(cred.user.uid).set({
-        username: email.split('@')[0],
-        name,
-        birth,
-        gender,
-        job,
-        relationship,
-        email
+    // โหลดข้อมูลส่วนตัวลูกค้า
+    function loadUserInfo() {
+      db.collection("users").doc(currentUser.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("user-info").innerHTML = `
+            <p>ชื่อ: ${data.name || "-"}</p>
+            <p>วันเกิด: ${data.birth || "-"}</p>
+            <p>เพศ: ${data.gender || "-"}</p>
+            <p>อาชีพ: ${data.job || "-"}</p>
+            <p>สถานะความสัมพันธ์: ${data.relationship || "-"}</p>
+          `;
+        }
       });
-    })
-    .then(()=>{
-      alert("สมัครเรียบร้อย! เข้าสู่ระบบอัตโนมัติ");
-      window.location.href = "prediction.html";
-    })
-    .catch(err=>{
-      errorDiv.innerText = err.message;
-    });
-}
+    }
 
-// เข้าสู่ระบบ
-function login(){
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  const errorDiv = document.getElementById('login-error');
-  errorDiv.innerText = '';
+    // โหลดคำถามทั้งหมดของลูกค้า
+    function loadQuestions() {
+      const tbody = document.querySelector("#questions-table tbody");
+      tbody.innerHTML = "";
+      db.collection("users").doc(currentUser.uid).collection("questions")
+        .orderBy("timestamp", "desc")
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            tbody.innerHTML = `<tr><td colspan="5">ยังไม่มีคำถาม</td></tr>`;
+            return;
+          }
+          let i = 1;
+          snapshot.forEach(doc => {
+            const q = doc.data();
+            const date = q.timestamp ? q.timestamp.toDate().toLocaleString("th-TH") : "-";
+            tbody.innerHTML += `
+              <tr>
+                <td>${i++}</td>
+                <td>${date}</td>
+                <td>${q.status || "-"}</td>
+                <td>${q.question || "-"}</td>
+                <td><button onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button></td>
+              </tr>
+            `;
+          });
+        });
+    }
 
-  if(!email || !password){
-    errorDiv.innerText = "กรุณากรอกข้อมูลให้ครบ";
-    return;
-  }
+    function viewPrediction(questionId) {
+      window.location.href = `prediction2.html?uid=${currentUser.uid}&qid=${questionId}`;
+    }
 
-  auth.signInWithEmailAndPassword(email,password)
-    .then(()=>{
-      window.location.href = "prediction.html";
-    })
-    .catch(err=>{
-      errorDiv.innerText = err.message;
-    });
-}
-
-// ถ้า user เข้าสู่ระบบแล้ว รีไดเร็คไป prediction.html
-auth.onAuthStateChanged(user=>{
-  if(user) window.location.href="prediction.html";
-});
-</script>
+    function logout() {
+      auth.signOut().then(() => window.location.href = "index.html");
+    }
+  </script>
 </body>
 </html>
