@@ -1,3 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horowednesday Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Comfortaa', cursive;
+}
+body {
+  background: linear-gradient(135deg,#c3bef0,#b4e0ff);
+  padding: 10px;
+}
+.container {
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  max-width: 520px;
+  margin: 0 auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+header img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  margin: auto;
+  display: block;
+}
+header h1 {
+  text-align: center;
+  color: #5d4fa2;
+  margin: 10px 0;
+  font-size: 1.5rem;
+}
+h2 {
+  color: #5d4fa2;
+  margin: 10px 0;
+}
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  resize: none;
+  font-size: 0.95rem;
+}
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg,#9d8de3,#7ec4ff);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.3s;
+}
+button:hover { transform: scale(1.05); }
+
+.deck-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.deck-controls button {
+  flex: 1;
+  margin: 0 5px;
+}
+#deck {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  margin-top: 10px;
+}
+.card {
+  width: 80px;
+  height: 120px;
+  background: url('tarotcard.png') no-repeat center/cover;
+  border-radius: 10px;
+  position: absolute;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.card:hover {
+  transform: translateY(-8px) scale(1.05);
+}
+.card.selected {
+  border-color: #7e5de8;
+  transform: translateY(-10px) scale(1.08);
+}
+.question-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+}
+#question-input {
+  flex: 1;
+}
+.question-list {
+  margin-top: 15px;
+}
+.question-item {
+  background: #f0f0ff;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.question-item h3 {
+  font-size: 1rem;
+  color: #5d4fa2;
+  margin-bottom: 5px;
+}
+.total {
+  margin-top: 5px;
+  font-weight: bold;
+  color: #5d4fa2;
+  text-align: right;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <img src="wednesdaylogo.png" alt="Horowednesday Logo">
+    <h1>Horowednesday</h1>
+  </header>
+
+  <h2>ตั้งคำถามใหม่</h2>
+  <div class="question-section">
+    <textarea id="question-input" rows="2" placeholder="พิมพ์คำถามของคุณ..."></textarea>
+    <button style="height:48px;" onclick="addQuestion()">เพิ่มคำถาม</button>
+  </div>
+
+  <h2>ไพ่ของคุณ</h2>
+  <div class="deck-controls">
+    <button onclick="cutDeck()">ตัดไพ่</button>
+    <button onclick="shuffleDeck()">สับไพ่</button>
+  </div>
+  <div id="deck"></div>
+
+  <div class="total" id="total-amount">ยอดชำระ: 0 บาท</div>
+
+  <h2>คำถามของฉัน</h2>
+  <div class="question-list" id="question-list"></div>
+
+  <button onclick="goToPayment()" style="width:100%;margin-top:10px;">จ่ายเงิน</button>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
@@ -49,7 +209,7 @@ function renderDeck() {
   const rowCount = 3; // จำนวนแถว
   const cardsPerRow = Math.ceil(deck.length / rowCount);
   const offsetY = 20; // ระยะซ้อนในแนวตั้ง
-  const spacingX = 8; // ระยะห่างไพ่แต่ละใบในแนวนอน
+  const spacingX = 8; // ระยะห่างแนวนอน
 
   deck.forEach((card, i) => {
     const cardDiv = document.createElement('div');
@@ -58,15 +218,13 @@ function renderDeck() {
 
     const row = Math.floor(i / cardsPerRow);
     const col = i % cardsPerRow;
-    const rowWidth = (cardsPerRow - 1) * spacingX + 60;
+    const rowWidth = (cardsPerRow - 1) * spacingX + 80;
     const startX = (deckDiv.clientWidth - rowWidth) / 2;
 
-    // จัดตำแหน่งซ้อนสวย ๆ แบบกอง
     cardDiv.style.top = `${row * offsetY + row * 100}px`;
     cardDiv.style.left = `${startX + col * spacingX}px`;
     cardDiv.style.zIndex = i;
 
-    // คลิกเลือกไพ่
     cardDiv.onclick = () => {
       if (cardDiv.classList.contains('selected')) {
         cardDiv.classList.remove('selected');
@@ -149,3 +307,5 @@ async function goToPayment() {
 
 window.addEventListener('resize', renderDeck);
 </script>
+</body>
+</html>
