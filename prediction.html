@@ -127,25 +127,27 @@ async function loadQuestions(){
             tbody.innerHTML = `<tr><td colspan="4">❌ ยังไม่มีคำถาม</td></tr>`;
             return;
         }
-        let html="";
-        snapshot.forEach((doc,index)=>{
-            const d = doc.data();
-            const question = d.question || "-";
-            const prediction = d.prediction || null;
-            const statusText = prediction ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
-            const statusClass = prediction ? "status-done" : "status-pending";
+        let html = "";
+let counter = 1;
+snapshot.forEach((doc)=>{
+    const d = doc.data();
+    const question = d.question || "-";
+    const prediction = d.prediction || null;
+    const statusText = prediction ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
+    const statusClass = prediction ? "status-done" : "status-pending";
 
-            html+=`
-            <tr>
-                <td>${index+1}</td>
-                <td>${question}</td>
-                <td class="${statusClass}">${statusText}</td>
-                <td class="actions">
-                    <button class="btn edit-btn" onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button>
-                    <button class="btn logout-btn" onclick="deleteQuestion('${doc.id}')">ลบ</button>
-                </td>
-            </tr>`;
-        });
+    html+=`
+    <tr>
+        <td>${counter}</td>
+        <td>${question}</td>
+        <td class="${statusClass}">${statusText}</td>
+        <td class="actions">
+            <button class="btn edit-btn" onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button>
+        </td>
+    </tr>`;
+    counter++;
+});
+
         tbody.innerHTML = html;
     }catch(err){
         document.querySelector("#question-table tbody").innerHTML = `<tr><td colspan="4">⚠️ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
