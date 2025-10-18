@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สมัครสมาชิก - Horowednesday</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
+body{background:linear-gradient(135deg,#d7c9ff,#b4e0ff);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;}
+.container{background:#fff;border-radius:15px;padding:30px;max-width:400px;width:100%;box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+h1{text-align:center;color:#5d4fa2;margin-bottom:20px;}
+input{width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #ccc;}
+button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:12px;background:linear-gradient(135deg,#9d8de3,#7ec4ff);color:#fff;font-size:1rem;cursor:pointer;transition:0.3s;}
+button:hover{opacity:0.9;}
+a{text-decoration:none;color:#5d4fa2;display:block;text-align:center;margin-top:10px;}
+#error-msg{color:red;text-align:center;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>สมัครสมาชิก</h1>
+  <input type="text" id="signup-username" placeholder="Username">
+  <input type="text" id="signup-name" placeholder="ชื่อจริง">
+  <input type="text" id="signup-birth" placeholder="วันเกิด (DD/MM/YYYY)">
+  <input type="text" id="signup-gender" placeholder="เพศ">
+  <input type="text" id="signup-job" placeholder="อาชีพ">
+  <input type="text" id="signup-relationship" placeholder="สถานะความสัมพันธ์">
+  <input type="email" id="signup-email" placeholder="อีเมล">
+  <input type="password" id="signup-password" placeholder="รหัสผ่าน">
+  <button onclick="signup()">สมัครสมาชิก</button>
+  <a href="index.html">กลับไปหน้าเข้าสู่ระบบ</a>
+  <div id="error-msg"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
+  authDomain: "horowednesday.firebaseapp.com",
+  projectId: "horowednesday",
+  storageBucket: "horowednesday.appspot.com",
+  messagingSenderId: "604956033127",
+  appId: "1:604956033127:web:fec565a41020ccf28814c2",
+  measurementId: "G-B38JLFJPVS"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const errorMsg = document.getElementById("error-msg");
+
+function signup(){
+  const username=document.getElementById('signup-username').value.trim();
+  const name=document.getElementById('signup-name').value.trim();
+  const birth=document.getElementById('signup-birth').value.trim();
+  const gender=document.getElementById('signup-gender').value.trim();
+  const job=document.getElementById('signup-job').value.trim();
+  const relationship=document.getElementById('signup-relationship').value.trim();
+  const email=document.getElementById('signup-email').value.trim();
+  const password=document.getElementById('signup-password').value.trim();
+
+  if(!username || !name || !birth || !gender || !job || !relationship || !email || !password){
+    errorMsg.innerText='กรุณากรอกข้อมูลให้ครบทุกช่อง';
+    return;
+  }
+
+  auth.createUserWithEmailAndPassword(email,password)
+    .then(cred=>{
+      return db.collection('users').doc(cred.user.uid).set({
+        username,
+        name,
+        birth,
+        gender,
+        job,
+        relationship,
+        email,
+        createdAt: new Date().toISOString()
+      });
+    })
+    .then(()=>{
+      window.location.href='prediction.html';
+    })
+    .catch(err=>{
+      errorMsg.innerText=err.message;
+    });
+}
+</script>
+</body>
+</html>
