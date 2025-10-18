@@ -98,14 +98,15 @@ async function loadAllPredictions() {
             return;
         }
 
-        let html = "";
-        snapshot.forEach((doc, index) => {
-            const d = doc.data();
-            const date = d.timestamp?.toDate().toLocaleString("th-TH") || "-";
-            const status = d.status || "-";
-            const question = d.question || "-";
-            const prediction = d.prediction || null;
-            const cards = (d.cards || []).join(", ") || "-";
+       let html = "";
+let counter = 1;
+snapshot.forEach((doc) => {
+    const d = doc.data();
+    const date = d.timestamp?.toDate().toLocaleString("th-TH") || "-";
+    const status = d.status || "-";
+    const question = d.question || "-";
+    const prediction = d.prediction || null;
+    const cards = (d.cards || []).join(", ") || "-";
 
             // กำหนด class สีเขียวถ้ามีคำทำนาย
             const headerClass = prediction ? "accordion-header predicted" : "accordion-header";
