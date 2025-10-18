@@ -9,23 +9,22 @@
 body { font-family: 'Comfortaa', cursive; background: linear-gradient(135deg,#d4e0ff,#e6d6ff); margin:0; padding:0; }
 .container { max-width:900px; margin:30px auto; background:#fff; padding:30px; border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,0.1); }
 h1 { text-align:center; color:#5d4fa2; }
-.user-info { background:#f9f8ff; border-radius:15px; padding:15px; margin-top:10px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; }
-.user-info div { margin-bottom:10px; }
-.user-info p { margin:5px 0; color:#5d4fa2; }
-button { background:linear-gradient(135deg,#9d8de3,#7ec4ff); color:white; border:none; padding:8px 14px; border-radius:10px; cursor:pointer; transition:0.3s; }
-button:hover { transform:scale(1.05); }
-#add-btn { margin-left:10px; background:#7ec4ff; }
+h2 { color:#5d4fa2; margin-top:20px; }
 table { width:100%; border-collapse:collapse; margin-top:20px; }
 th, td { padding:10px; text-align:center; border-bottom:1px solid #ddd; }
 th { background:#f3f1ff; color:#5d4fa2; }
+button { background:linear-gradient(135deg,#9d8de3,#7ec4ff); color:white; border:none; padding:8px 14px; border-radius:10px; cursor:pointer; transition:0.3s; }
+button:hover { transform:scale(1.05); }
+.user-info { background:#f9f8ff; border-radius:15px; padding:15px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; }
+.user-info div { display:flex; gap:15px; flex-wrap:wrap; }
+.logout { background:#ff9a9e; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>รายการคำถามของคุณ</h1>
-
   <div class="user-info">
-    <div id="user-details">
+    <div id="user-info">
       <p>ชื่อ: -</p>
       <p>วันเกิด: -</p>
       <p>เพศ: -</p>
@@ -33,9 +32,8 @@ th { background:#f3f1ff; color:#5d4fa2; }
       <p>สถานะความสัมพันธ์: -</p>
     </div>
     <div>
-      <button onclick="editUserInfo()">แก้ไขข้อมูล</button>
-      <button id="add-btn" onclick="goDashboard()">เพิ่มคำถาม</button>
-      <button onclick="logout()">ออกจากระบบ</button>
+      <button onclick="editProfile()">แก้ไขข้อมูล</button>
+      <button class="logout" onclick="logout()">ออกจากระบบ</button>
     </div>
   </div>
 
@@ -57,7 +55,6 @@ th { background:#f3f1ff; color:#5d4fa2; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBZR8mTUtdJC8nsajBd7hxZ1o6HFGslwUY",
@@ -74,75 +71,68 @@ const db = firebase.firestore();
 
 let currentUser;
 
-auth.onAuthStateChanged(user => {
-  if(!user){
-    window.location.href="index.html";
-    return;
-  }
+auth.onAuthStateChanged(async (user) => {
+  if(!user){ window.location.href="index.html"; return; }
   currentUser = user;
   loadUserInfo();
   loadQuestions();
 });
 
-function logout() {
-  auth.signOut().then(() => window.location.href="index.html");
-}
-
-function goDashboard() {
-  window.location.href="dashboard.html";
-}
-
-async function loadUserInfo() {
-  const doc = await db.collection('users').doc(currentUser.uid).get();
-  if(doc.exists){
-    const data = doc.data();
-    const details = document.getElementById('user-details');
-    details.innerHTML = `
-      <p>ชื่อ: ${data.name || "-"}</p>
-      <p>วันเกิด: ${data.birth || "-"}</p>
-      <p>เพศ: ${data.gender || "-"}</p>
-      <p>อาชีพ: ${data.job || "-"}</p>
-      <p>สถานะความสัมพันธ์: ${data.relationship || "-"}</p>
-    `;
-  }
-}
-
-function editUserInfo() {
-  const newName = prompt("ชื่อ:", document.querySelector('#user-details p:first-child').innerText.split(": ")[1]);
-  if(newName){
-    db.collection('users').doc(currentUser.uid).update({name:newName}).then(()=>loadUserInfo());
-  }
-}
-
-async function loadQuestions() {
-  const tbody = document.querySelector("#questions-table tbody");
-  tbody.innerHTML = "";
-  const snapshot = await db.collection("users").doc(currentUser.uid)
-    .collection("questions").orderBy("timestamp","desc").get();
-  
-  if(snapshot.empty){
-    tbody.innerHTML = `<tr><td colspan="5">ยังไม่มีคำถาม</td></tr>`;
-    return;
-  }
-
-  let i = 1;
-  snapshot.forEach(doc => {
-    const q = doc.data();
-    const date = q.timestamp ? q.timestamp.toDate().toLocaleString("th-TH") : "-";
-    tbody.innerHTML += `
-      <tr>
-        <td>${i++}</td>
-        <td>${date}</td>
-        <td>${q.status || "-"}</td>
-        <td>${q.question || "-"}</td>
-        <td><button onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button></td>
-      </tr>
-    `;
+// โหลดข้อมูลส่วนตัวลูกค้า
+function loadUserInfo(){
+  db.collection("users").doc(currentUser.uid).get().then(doc=>{
+    if(doc.exists){
+      const data = doc.data();
+      document.getElementById("user-info").innerHTML = `
+        <p>ชื่อ: ${data.name || "-"}</p>
+        <p>วันเกิด: ${data.birth || "-"}</p>
+        <p>เพศ: ${data.gender || "-"}</p>
+        <p>อาชีพ: ${data.job || "-"}</p>
+        <p>สถานะความสัมพันธ์: ${data.relationship || "-"}</p>
+      `;
+    }
   });
+}
+
+// โหลดคำถามทั้งหมดของลูกค้า
+function loadQuestions(){
+  const tbody = document.querySelector("#questions-table tbody");
+  tbody.innerHTML="";
+  db.collection("users").doc(currentUser.uid).collection("questions")
+    .orderBy("timestamp","desc")
+    .get()
+    .then(snapshot=>{
+      if(snapshot.empty){
+        tbody.innerHTML = `<tr><td colspan="5">ยังไม่มีคำถาม</td></tr>`;
+        return;
+      }
+      let i=1;
+      snapshot.forEach(doc=>{
+        const q = doc.data();
+        const date = q.timestamp ? q.timestamp.toDate().toLocaleString("th-TH") : "-";
+        tbody.innerHTML += `
+          <tr>
+            <td>${i++}</td>
+            <td>${date}</td>
+            <td>${q.status || "-"}</td>
+            <td>${q.question || "-"}</td>
+            <td><button onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button></td>
+          </tr>
+        `;
+      });
+    });
 }
 
 function viewPrediction(questionId){
   window.location.href = `prediction2.html?uid=${currentUser.uid}&qid=${questionId}`;
+}
+
+function logout(){
+  auth.signOut().then(()=>window.location.href="index.html");
+}
+
+function editProfile(){
+  window.location.href = "profile-edit.html";
 }
 </script>
 </body>
