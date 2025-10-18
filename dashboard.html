@@ -8,21 +8,24 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Comfortaa',cursive;}
 body{background:linear-gradient(135deg,#c3bef0,#b4e0ff);padding:10px;}
-.container{background:#fff;border-radius:20px;padding:20px;max-width:500px;margin:0 auto;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-header img{width:80px;height:80px;border-radius:50%;margin:auto;display:block;}
+.container{background:#fff;border-radius:20px;padding:20px;max-width:520px;margin:0 auto;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
+header img{width:70px;height:70px;border-radius:50%;margin:auto;display:block;}
 header h1{text-align:center;color:#5d4fa2;margin:10px 0;font-size:1.5rem;}
 h2{color:#5d4fa2;margin:10px 0;}
-textarea{width:100%;padding:10px;margin:5px 0;border-radius:10px;border:1px solid #ccc;resize:none;}
-button{width:100%;padding:12px;margin:10px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#9d8de3,#7ec4ff);color:#fff;font-size:1rem;cursor:pointer;transition:0.3s;}
+textarea{width:100%;padding:10px;margin:5px 0;border-radius:10px;border:1px solid #ccc;resize:none;font-size:0.95rem;}
+button{padding:10px;border:none;border-radius:12px;background:linear-gradient(135deg,#9d8de3,#7ec4ff);color:#fff;font-size:1rem;cursor:pointer;transition:0.3s;}
 button:hover{transform: scale(1.05);}
-.small-btn{width:48%;display:inline-block;margin-right:4%;background:#7ec4ff;}
-#deck{position:relative;width:100%;height:400px;margin-top:10px;}
-.card{width:80px;height:120px;background:url('tarotcard.png') no-repeat center/cover;border-radius:10px;position:absolute;cursor:pointer;border:2px solid transparent;transition:0.2s;}
+.deck-controls{display:flex;justify-content:space-between;margin-bottom:10px;}
+.deck-controls button{flex:1;margin:0 5px;}
+#deck{position:relative;width:100%;height:360px;margin-top:10px;}
+.card{width:60px;height:90px;background:url('tarotcard.png') no-repeat center/cover;border-radius:8px;position:absolute;cursor:pointer;border:2px solid transparent;transition:0.2s;}
 .card.selected{border-color:#7e5de8;}
+.question-section{display:flex;align-items:flex-start;gap:10px;margin-top:10px;}
+#question-input{flex:1;}
 .question-list{margin-top:20px;}
 .question-item{background:#f0f0ff;border-radius:10px;padding:10px;margin-bottom:10px;}
 .question-item h3{font-size:1rem;color:#5d4fa2;margin-bottom:5px;}
-.total{margin-top:10px;font-weight:bold;color:#5d4fa2;}
+.total{margin-top:10px;font-weight:bold;color:#5d4fa2;text-align:right;}
 </style>
 </head>
 <body>
@@ -33,23 +36,24 @@ button:hover{transform: scale(1.05);}
 </header>
 
 <h2>ตั้งคำถามใหม่</h2>
-<textarea id="question-input" rows="2" placeholder="พิมพ์คำถามของคุณ..."></textarea>
+<div class="question-section">
+  <textarea id="question-input" rows="2" placeholder="พิมพ์คำถามของคุณ..."></textarea>
+  <button style="height:48px;" onclick="addQuestion()">เพิ่มคำถาม</button>
+</div>
 
 <h2>ไพ่ของคุณ</h2>
-<div style="margin-bottom:10px;">
-  <button class="small-btn" onclick="cutDeck()">ตัดไพ่</button>
-  <button class="small-btn" onclick="shuffleDeck()">สับไพ่</button>
+<div class="deck-controls">
+  <button onclick="cutDeck()">ตัดไพ่</button>
+  <button onclick="shuffleDeck()">สับไพ่</button>
 </div>
 <div id="deck"></div>
-
-<button onclick="addQuestion()">เพิ่มคำถาม</button>
 
 <div class="total" id="total-amount">ยอดรวม: 0 บาท</div>
 
 <h2>คำถามของฉัน</h2>
 <div class="question-list" id="question-list"></div>
 
-<button onclick="goToPayment()">จ่ายเงิน</button>
+<button onclick="goToPayment()" style="width:100%;">จ่ายเงิน</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -98,23 +102,22 @@ auth.onAuthStateChanged(user=>{
   renderDeck();
 });
 
-// ฟังก์ชันเรียงไพ่ 3 แถว
 function renderDeck(){
   deckDiv.innerHTML='';
   const rowCount = 3;
   const cardsPerRow = Math.ceil(deck.length / rowCount);
   const offsetY = 30;
-  const spacingX = 20;
+  const spacingX = 18;
 
-  deck.forEach((card, i)=>{
+  deck.forEach((card,i)=>{
     const cardDiv = document.createElement('div');
     cardDiv.className='card';
     cardDiv.dataset.cardName = card;
 
-    const row = Math.floor(i / cardsPerRow);
-    const col = i % cardsPerRow;
+    const row = Math.floor(i/cardsPerRow);
+    const col = i%cardsPerRow;
 
-    const rowWidth = (cardsPerRow-1)*spacingX+80;
+    const rowWidth = (cardsPerRow-1)*spacingX+60;
     const startX = (deckDiv.clientWidth - rowWidth)/2;
     cardDiv.style.top = `${row*offsetY}px`;
     cardDiv.style.left = `${startX+col*spacingX}px`;
@@ -134,7 +137,6 @@ function renderDeck(){
   });
 }
 
-// สับไพ่
 function shuffleDeck(){
   for(let i=deck.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -143,14 +145,12 @@ function shuffleDeck(){
   renderDeck();
 }
 
-// ตัดไพ่ (แบ่งครึ่งแล้วสลับตำแหน่ง)
 function cutDeck(){
   const mid = Math.floor(deck.length/2);
   deck = deck.slice(mid).concat(deck.slice(0,mid));
   renderDeck();
 }
 
-// เพิ่มคำถาม
 function addQuestion(){
   const q=document.getElementById('question-input').value.trim();
   if(!q){ alert("กรุณากรอกคำถาม"); return; }
@@ -162,7 +162,6 @@ function addQuestion(){
   renderQuestions();
 }
 
-// แสดงคำถาม
 function renderQuestions(){
   const list = document.getElementById('question-list');
   list.innerHTML='';
@@ -175,7 +174,6 @@ function renderQuestions(){
   document.getElementById('total-amount').innerText=`ยอดชำระ: ${questions.length*19} บาท`;
 }
 
-// ไปหน้าชำระเงิน
 async function goToPayment(){
   if(questions.length===0){ alert("คุณยังไม่มีคำถาม"); return; }
   const userRef = db.collection('users').doc(currentUser.uid).collection('questions');
