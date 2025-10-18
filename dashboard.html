@@ -93,9 +93,10 @@ button:hover { transform: scale(1.05); }
 }
 
 .card.selected {
-  border-color: #7e5de8;
-  box-shadow: 0 0 8px rgba(126,93,232,0.5);
+  border-color: rgba(126,93,232,0.3);
+  box-shadow: 0 0 3px rgba(126,93,232,0.2);
 }
+
 
 .card .front, .card .back {
   width: 100%;
@@ -246,7 +247,7 @@ function renderDeck() {
 
     const front = document.createElement('div');
     front.className = 'front';
-    front.style.backgroundImage = `url('tarot/${card}.png')`; // path ของหน้าไพ่จริง
+    front.style.backgroundImage = `url('${card}.png')`; // path ของหน้าไพ่จริง
     const back = document.createElement('div');
     back.className = 'back';
 
