@@ -23,7 +23,7 @@ a{text-decoration:none;color:#5d4fa2;display:block;text-align:center;margin-top:
   <h1>เข้าสู่ระบบ</h1>
   <input type="email" id="login-email" placeholder="อีเมล">
   <input type="password" id="login-password" placeholder="รหัสผ่าน">
-  <button onclick="login()">เข้าสู่ระบบ</button>
+  <button id="login-btn">เข้าสู่ระบบ</button>
   <a href="signup.html">ยังไม่มีบัญชี? สมัครสมาชิก</a>
   <div id="error-msg"></div>
 </div>
@@ -44,31 +44,39 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-
 const errorMsg = document.getElementById("error-msg");
+const loginBtn = document.getElementById("login-btn");
 
-function login(){
+loginBtn.addEventListener("click", () => {
   const email = document.getElementById("login-email").value.trim();
   const password = document.getElementById("login-password").value.trim();
+
   if(!email || !password){
     errorMsg.innerText = "กรุณากรอกอีเมลและรหัสผ่าน";
     return;
   }
 
+  loginBtn.disabled = true;
+  loginBtn.innerText = "กำลังเข้าสู่ระบบ...";
+
   auth.signInWithEmailAndPassword(email,password)
-    .then(()=>{
+    .then(() => {
+      // ไป prediction.html หลังล็อกอินสำเร็จ
       window.location.href = "prediction.html";
     })
-    .catch(err=>{
+    .catch(err => {
       errorMsg.innerText = err.message;
+      loginBtn.disabled = false;
+      loginBtn.innerText = "เข้าสู่ระบบ";
     });
-}
+});
 
-// ป้องกันรีโหลดวน
-auth.onAuthStateChanged(user=>{
-  if(user){
-    window.location.href = "prediction.html";
-  }
+// ✅ ป้องกันรีโหลดวน
+document.addEventListener("DOMContentLoaded", () => {
+  auth.onAuthStateChanged(user => {
+    // เช็กเฉย ๆ ไม่ redirect อัตโนมัติ
+    console.log(user ? "🔒 Logged in" : "🚪 Logged out");
+  });
 });
 </script>
 </body>
