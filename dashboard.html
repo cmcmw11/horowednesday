@@ -80,20 +80,48 @@ button:hover { transform: scale(1.05); }
 .card {
   width: 80px;
   height: 120px;
-  background: url('tarotcard.png') no-repeat center/cover;
-  border-radius: 10px;
   position: absolute;
-  cursor: pointer;
+  border-radius: 10px;
   border: 2px solid transparent;
-  transition: transform 0.2s, border-color 0.2s;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.6s, border-color 0.2s;
 }
+
 .card:hover {
-  transform: translateY(-8px) scale(1.05);
+  transform: translateY(-6px) scale(1.04);
 }
+
 .card.selected {
   border-color: #7e5de8;
-  transform: translateY(-10px) scale(1.08);
+  box-shadow: 0 0 8px rgba(126,93,232,0.5);
 }
+
+.card .front, .card .back {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+}
+
+/* ด้านหลังไพ่ */
+.card .back {
+  background-image: url('tarotcard.png'); /* หลังไพ่ */
+}
+
+/* ด้านหน้าไพ่ */
+.card .front {
+  transform: rotateY(180deg);
+}
+
+/* พลิกไพ่ */
+.card.flipped {
+  transform: rotateY(180deg);
+}
+
 .question-section {
   display: flex;
   align-items: flex-start;
@@ -206,15 +234,24 @@ auth.onAuthStateChanged(user => {
 
 function renderDeck() {
   deckDiv.innerHTML = '';
-  const rowCount = 3; // จำนวนแถว
+  const rowCount = 3;
   const cardsPerRow = Math.ceil(deck.length / rowCount);
-  const offsetY = 20; // ระยะซ้อนในแนวตั้ง
-  const spacingX = 8; // ระยะห่างแนวนอน
+  const offsetY = 20;
+  const spacingX = 8;
 
   deck.forEach((card, i) => {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'card';
     cardDiv.dataset.cardName = card;
+
+    const front = document.createElement('div');
+    front.className = 'front';
+    front.style.backgroundImage = `url('tarot/${card}.png')`; // path ของหน้าไพ่จริง
+    const back = document.createElement('div');
+    back.className = 'back';
+
+    cardDiv.appendChild(front);
+    cardDiv.appendChild(back);
 
     const row = Math.floor(i / cardsPerRow);
     const col = i % cardsPerRow;
@@ -226,20 +263,26 @@ function renderDeck() {
     cardDiv.style.zIndex = i;
 
     cardDiv.onclick = () => {
-      if (cardDiv.classList.contains('selected')) {
-        cardDiv.classList.remove('selected');
+      const isSelected = cardDiv.classList.contains('selected');
+      if (isSelected) {
+        // ถ้ายกเลิกเลือก → กลับหลัง
+        cardDiv.classList.remove('selected', 'flipped');
         selectedCards = selectedCards.filter(c => c !== card);
-      } else if (selectedCards.length < 3) {
-        cardDiv.classList.add('selected');
-        selectedCards.push(card);
       } else {
-        alert("เลือกได้แค่ 3 ใบต่อคำถาม");
+        if (selectedCards.length >= 3) {
+          alert("เลือกได้แค่ 3 ใบต่อคำถาม");
+          return;
+        }
+        // พลิกไพ่และเลือก
+        cardDiv.classList.add('selected', 'flipped');
+        selectedCards.push(card);
       }
     };
 
     deckDiv.appendChild(cardDiv);
   });
 }
+
 
 function shuffleDeck() {
   deck.sort(() => Math.random() - 0.5);
