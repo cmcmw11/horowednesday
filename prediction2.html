@@ -98,7 +98,7 @@ async function loadAllPredictions() {
             return;
         }
 
-       let html = "";
+let html = "";
 let counter = 1;
 snapshot.forEach((doc) => {
     const d = doc.data();
@@ -107,30 +107,30 @@ snapshot.forEach((doc) => {
     const question = d.question || "-";
     const prediction = d.prediction || null;
     const cards = (d.cards || []).join(", ") || "-";
+    const headerClass = prediction ? "accordion-header predicted" : "accordion-header";
 
-            // กำหนด class สีเขียวถ้ามีคำทำนาย
-            const headerClass = prediction ? "accordion-header predicted" : "accordion-header";
+    html += `
+    <div class="accordion" data-id="${doc.id}">
+        <div class="${headerClass}">
+            <span>${counter}. ${question}</span>
+            <span>▼</span>
+        </div>
+        <div class="accordion-content">
+            <p><strong>วันที่:</strong> ${date}</p>
+            <p><strong>สถานะ:</strong> ${status}</p>
+            <p><strong>คำทำนาย:</strong> ${prediction || "ยังไม่มีคำทำนาย"}</p>
+            <p><strong>ไพ่ที่เลือก:</strong> ${cards}</p>
+            <div class="edit-section">
+                <textarea rows="2" placeholder="แก้ไขคำถาม">${question}</textarea>
+                <button class="btn edit-btn">บันทึกแก้ไข</button>
+                <button class="btn delete-btn">ลบคำถาม</button>
+            </div>
+            <button class="btn edit-btn toggle-edit">แก้ไขคำถาม</button>
+        </div>
+    </div>`;
+    counter++;
+});
 
-            html += `
-            <div class="accordion" data-id="${doc.id}">
-                <div class="${headerClass}">
-                    <span>${index + 1}. ${question}</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <p><strong>วันที่:</strong> ${date}</p>
-                    <p><strong>สถานะ:</strong> ${status}</p>
-                    <p><strong>คำทำนาย:</strong> ${prediction || "ยังไม่มีคำทำนาย"}</p>
-                    <p><strong>ไพ่ที่เลือก:</strong> ${cards}</p>
-                    <div class="edit-section">
-                        <textarea rows="2" placeholder="แก้ไขคำถาม">${question}</textarea>
-                        <button class="btn edit-btn">บันทึกแก้ไข</button>
-                        <button class="btn delete-btn">ลบคำถาม</button>
-                    </div>
-                    <button class="btn edit-btn toggle-edit">แก้ไขคำถาม</button>
-                </div>
-            </div>`;
-        });
 
         document.getElementById('prediction-data').innerHTML = html;
 
