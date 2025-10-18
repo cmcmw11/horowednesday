@@ -12,13 +12,16 @@
   h1 { text-align:center; color:#5d4fa2; margin-bottom:15px; }
   .user-info { background:#f3f0ff; padding:15px; border-radius:12px; margin-bottom:20px; }
   .user-info p { color:#5d4fa2; margin:3px 0; }
-  table { width:100%; border-collapse:collapse; }
-  th, td { padding:10px; border:1px solid #ddd; text-align:center; }
-  th { background:#d7cfff; color:#5d4fa2; }
-  textarea { width:100%; border-radius:10px; border:1px solid #ccc; padding:10px; resize:none; }
+  
+  .accordion { background:#f3f0ff; border-radius:12px; margin-bottom:15px; overflow:hidden; }
+  .accordion-header { padding:15px; cursor:pointer; font-weight:bold; color:#5d4fa2; display:flex; justify-content:space-between; align-items:center; }
+  .accordion-header:hover { background:#e0dbff; }
+  .accordion-content { display:none; padding:15px; border-top:1px solid #d7cfff; background:white; color:#333; border-radius:0 0 12px 12px; }
+
   button { padding:10px 15px; border:none; border-radius:10px; margin-top:10px; cursor:pointer; background:linear-gradient(135deg,#9d8de3,#7ec4ff); color:#fff; font-weight:bold; transition:0.3s; }
   button:hover { transform:scale(1.05); }
   .back-btn { background:#ccc; color:#333; }
+
 </style>
 </head>
 <body>
@@ -34,21 +37,10 @@
     <p><strong>สถานะความสัมพันธ์:</strong> <span id="u-relationship"></span></p>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>ลำดับ</th>
-        <th>วันที่</th>
-        <th>สถานะ</th>
-        <th>คำถาม</th>
-        <th>คำทำนาย</th>
-        <th>ไพ่ที่เลือก</th>
-      </tr>
-    </thead>
-    <tbody id="prediction-data">
-      <tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>
-    </tbody>
-  </table>
+  <!-- คำถาม -->
+  <div id="prediction-data">
+    <p>กำลังโหลดข้อมูล...</p>
+  </div>
 
   <div id="edit-section" style="margin-top:20px; display:none;">
     <h3>แก้ไขคำถาม</h3>
@@ -90,7 +82,7 @@
       currentQuestionId = getQueryParam("qid");
       await loadUserInfo();
       if (currentQuestionId) loadPredictionDetail(currentQuestionId);
-      else document.getElementById('prediction-data').innerHTML = `<tr><td colspan="6">❌ ไม่พบคำถามนี้</td></tr>`;
+      else document.getElementById('prediction-data').innerHTML = `<p>❌ ไม่พบคำถามนี้</p>`;
     } else {
       window.location.href = "index.html";
     }
@@ -113,7 +105,7 @@
       const ref = db.collection("users").doc(currentUser.uid).collection("questions").doc(qid);
       const doc = await ref.get();
       if (!doc.exists) {
-        document.getElementById('prediction-data').innerHTML = `<tr><td colspan="6">❌ ไม่พบคำถามนี้</td></tr>`;
+        document.getElementById('prediction-data').innerHTML = `<p>❌ ไม่พบคำถามนี้</p>`;
         return;
       }
 
@@ -122,42 +114,23 @@
       const status = d.status || "-";
       const question = d.question || "-";
       const prediction = d.prediction || "ยังไม่มีคำทำนาย";
-      const cards = (d.cards || []).join(", "); // แสดงเฉพาะชื่อไพ่
+      const cards = (d.cards || []).join(", ");
 
       const html = `
-        <tr>
-          <td>1</td>
-          <td>${date}</td>
-          <td>${status}</td>
-          <td>${question}</td>
-          <td>${prediction}</td>
-          <td>${cards}</td>
-        </tr>
+        <div class="accordion">
+          <div class="accordion-header">
+            <span>${question}</span>
+            <span>▼</span>
+          </div>
+          <div class="accordion-content">
+            <p><strong>วันที่:</strong> ${date}</p>
+            <p><strong>สถานะ:</strong> ${status}</p>
+            <p><strong>คำทำนาย:</strong> ${prediction}</p>
+            <p><strong>ไพ่ที่เลือก:</strong> ${cards}</p>
+          </div>
+        </div>
       `;
       document.getElementById('prediction-data').innerHTML = html;
 
+      // ถ้าไม่มีคำทำนาย ให้แสดงส่วนแก้ไข
       if (!d.prediction) {
-        document.getElementById("edit-section").style.display = "block";
-        document.getElementById("edit-question").value = d.question || "";
-      }
-    } catch (err) {
-      document.getElementById('prediction-data').innerHTML = `<tr><td colspan="6">⚠️ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
-    }
-  }
-
-  async function saveEdit() {
-    const newQ = document.getElementById("edit-question").value.trim();
-    if (!newQ) return alert("กรุณากรอกคำถามใหม่");
-    try {
-      await db.collection("users").doc(currentUser.uid)
-        .collection("questions").doc(currentQuestionId)
-        .update({ question: newQ, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-      alert("แก้ไขคำถามเรียบร้อย!");
-      loadPredictionDetail(currentQuestionId);
-    } catch (err) {
-      alert("เกิดข้อผิดพลาด: " + err.message);
-    }
-  }
-</script>
-</body>
-</html>
