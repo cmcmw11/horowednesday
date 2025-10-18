@@ -9,19 +9,25 @@
 * { box-sizing:border-box; font-family:'Baloo 2', cursive; margin:0; padding:0; }
 body { background:linear-gradient(135deg,#c3bef0,#b4e0ff); padding:20px; }
 .container { max-width:700px; margin:auto; background:white; border-radius:20px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.1); }
-.header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; }
 .header h1 { color:#5d4fa2; font-size:1.5rem; }
 .header .btn-group { display:flex; gap:10px; flex-wrap:wrap; }
+
+.user-info { background:#f3f0ff; padding:15px; border-radius:12px; margin-bottom:20px; }
+.user-info p { color:#5d4fa2; margin:3px 0; }
+
 .btn { padding:8px 12px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; color:#fff; transition:0.3s; font-size:0.9rem; }
 .btn:hover { transform:scale(1.05); }
 .add-btn { background:#7ec4ff; }
 .edit-btn { background:#9d8de3; }
 .logout-btn { background:#f55; }
+
 table { width:100%; border-collapse:collapse; }
 th, td { padding:10px; text-align:left; border-bottom:1px solid #ddd; }
 th { background:#d7cfff; color:#5d4fa2; }
-.status-pending { color:#d69e2e; font-weight:bold; } /* รอคำทำนาย */
-.status-done { color:#2b6a2b; font-weight:bold; } /* ทำนายเสร็จ */
+.status-pending { color:#d69e2e; font-weight:bold; }
+.status-done { color:#2b6a2b; font-weight:bold; }
+
 .actions button { margin-right:5px; padding:5px 8px; font-size:0.8rem; }
 @media (max-width:480px) {
   .header { flex-direction:column; align-items:flex-start; gap:10px; }
@@ -36,9 +42,18 @@ th { background:#d7cfff; color:#5d4fa2; }
     <h1>Dashboard</h1>
     <div class="btn-group">
       <button class="btn add-btn" onclick="window.location.href='dashboard.html'">เพิ่มคำถามใหม่</button>
-      <button class="btn edit-btn" onclick="window.location.href='edit-profile.html'">แก้ไขข้อมูล</button>
+      <button class="btn edit-btn" onclick="window.location.href='profile-edit.html'">แก้ไขข้อมูล</button>
       <button class="btn logout-btn" onclick="logout()">ล็อกเอาท์</button>
     </div>
+  </div>
+
+  <!-- ข้อมูลส่วนตัว -->
+  <div class="user-info" id="user-info">
+    <p><strong>ชื่อ:</strong> <span id="u-name">-</span></p>
+    <p><strong>วันเกิด:</strong> <span id="u-birth">-</span></p>
+    <p><strong>เพศ:</strong> <span id="u-gender">-</span></p>
+    <p><strong>อาชีพ:</strong> <span id="u-job">-</span></p>
+    <p><strong>สถานะความสัมพันธ์:</strong> <span id="u-relationship">-</span></p>
   </div>
 
   <table id="question-table">
@@ -79,6 +94,7 @@ let currentUser;
 auth.onAuthStateChanged(async user => {
     if(user){
         currentUser = user;
+        loadUserInfo();
         loadQuestions();
     } else {
         window.location.href = "index.html";
@@ -89,7 +105,20 @@ function logout(){
     auth.signOut();
 }
 
-// โหลดคำถามและแสดงในตาราง
+// โหลดข้อมูลผู้ใช้
+async function loadUserInfo(){
+    const doc = await db.collection("users").doc(currentUser.uid).get();
+    if(doc.exists){
+        const u = doc.data();
+        document.getElementById("u-name").innerText = u.name || "-";
+        document.getElementById("u-birth").innerText = u.birth || "-";
+        document.getElementById("u-gender").innerText = u.gender || "-";
+        document.getElementById("u-job").innerText = u.job || "-";
+        document.getElementById("u-relationship").innerText = u.relationship || "-";
+    }
+}
+
+// โหลดคำถาม
 async function loadQuestions(){
     try{
         const snapshot = await db.collection("users").doc(currentUser.uid).collection("questions").orderBy("timestamp","desc").get();
@@ -112,7 +141,7 @@ async function loadQuestions(){
                 <td>${question}</td>
                 <td class="${statusClass}">${statusText}</td>
                 <td class="actions">
-                    <button class="btn edit-btn" onclick="editQuestion('${doc.id}','${question.replace(/'/g,"\\'")}')">แก้ไข</button>
+                    <button class="btn edit-btn" onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button>
                     <button class="btn logout-btn" onclick="deleteQuestion('${doc.id}')">ลบ</button>
                 </td>
             </tr>`;
@@ -123,18 +152,12 @@ async function loadQuestions(){
     }
 }
 
-// ฟังก์ชันแก้ไขคำถาม
-function editQuestion(qid, oldQ){
-    const newQ = prompt("แก้ไขคำถาม:", oldQ);
-    if(newQ && newQ.trim()!==""){
-        db.collection("users").doc(currentUser.uid).collection("questions").doc(qid)
-        .update({question:newQ.trim(), timestamp:firebase.firestore.FieldValue.serverTimestamp()})
-        .then(()=> loadQuestions())
-        .catch(err=>alert("เกิดข้อผิดพลาด: "+err.message));
-    }
+// ไปหน้า prediction2.html
+function viewPrediction(qid){
+    window.location.href = `prediction2.html?qid=${qid}`;
 }
 
-// ฟังก์ชันลบคำถาม
+// ลบคำถาม
 function deleteQuestion(qid){
     if(confirm("คุณต้องการลบคำถามนี้ใช่หรือไม่?")){
         db.collection("users").doc(currentUser.uid).collection("questions").doc(qid)
