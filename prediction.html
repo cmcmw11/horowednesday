@@ -22,13 +22,24 @@ body { background:linear-gradient(135deg,#c3bef0,#b4e0ff); padding:20px; }
 .edit-btn { background:#9d8de3; }
 .logout-btn { background:#f55; }
 
-table { width:100%; border-collapse:collapse; }
+table { width:100%; border-collapse:collapse; margin-bottom:20px; }
 th, td { padding:10px; text-align:left; border-bottom:1px solid #ddd; }
 th { background:#d7cfff; color:#5d4fa2; }
 .status-pending { color:#d69e2e; font-weight:bold; }
 .status-done { color:#2b6a2b; font-weight:bold; }
 
 .actions button { margin-right:5px; padding:5px 8px; font-size:0.8rem; }
+
+.contact-admin {
+  background:#f0f8ff;
+  border-radius:12px;
+  padding:15px;
+  text-align:center;
+  color:#5d4fa2;
+  font-weight:bold;
+}
+.contact-admin a img { vertical-align:middle; margin-left:8px; }
+
 @media (max-width:480px) {
   .header { flex-direction:column; align-items:flex-start; gap:10px; }
   th, td { font-size:0.9rem; padding:8px; }
@@ -69,6 +80,14 @@ th { background:#d7cfff; color:#5d4fa2; }
       <tr><td colspan="4">กำลังโหลดข้อมูล...</td></tr>
     </tbody>
   </table>
+
+  <!-- ส่วนติดต่อแอดมิน -->
+  <div class="contact-admin" id="contact-admin">
+    หากต้องการติดตามสถานะ ส่ง Username ของคุณไปที่ LINE 
+    <a href="https://lin.ee/ErTBxXf" target="_blank">
+      <img src="https://scdn.line-apps.com/n/line_add_friends/btn/th.png" alt="เพิ่มเพื่อน" height="36" border="0">
+    </a>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -90,6 +109,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 let currentUser;
+let username = "";
 
 auth.onAuthStateChanged(async user => {
     if(user){
@@ -101,16 +121,15 @@ auth.onAuthStateChanged(async user => {
     }
 });
 
-function logout(){
-    auth.signOut();
-}
+function logout(){ auth.signOut(); }
 
 // โหลดข้อมูลผู้ใช้
 async function loadUserInfo(){
     const doc = await db.collection("users").doc(currentUser.uid).get();
     if(doc.exists){
         const u = doc.data();
-        document.getElementById("u-name").innerText = u.name || "-";
+        username = u.name || "-";
+        document.getElementById("u-name").innerText = username;
         document.getElementById("u-birth").innerText = u.birth || "-";
         document.getElementById("u-gender").innerText = u.gender || "-";
         document.getElementById("u-job").innerText = u.job || "-";
@@ -128,26 +147,26 @@ async function loadQuestions(){
             return;
         }
         let html = "";
-let counter = 1;
-snapshot.forEach((doc)=>{
-    const d = doc.data();
-    const question = d.question || "-";
-    const prediction = d.prediction || null;
-    const statusText = prediction ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
-    const statusClass = prediction ? "status-done" : "status-pending";
+        let counter = 1;
+        snapshot.forEach((doc)=>{
+            const d = doc.data();
+            const question = d.question || "-";
+            const prediction = d.prediction || null;
+            const statusText = prediction ? "ทำนายเสร็จแล้ว" : "รอคำทำนาย";
+            const statusClass = prediction ? "status-done" : "status-pending";
 
-    html+=`
-    <tr>
-        <td>${counter}</td>
-        <td>${question}</td>
-        <td class="${statusClass}">${statusText}</td>
-        <td class="actions">
-            <button class="btn edit-btn" onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button>
-        </td>
-    </tr>`;
-    counter++;
-});
-
+            html+=`
+            <tr>
+                <td>${counter}</td>
+                <td>${question}</td>
+                <td class="${statusClass}">${statusText}</td>
+                <td class="actions">
+                    <button class="btn edit-btn" onclick="viewPrediction('${doc.id}')">ดูคำทำนาย</button>
+                    <button class="btn logout-btn" onclick="deleteQuestion('${doc.id}')">ลบ</button>
+                </td>
+            </tr>`;
+            counter++;
+        });
         tbody.innerHTML = html;
     }catch(err){
         document.querySelector("#question-table tbody").innerHTML = `<tr><td colspan="4">⚠️ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
